@@ -21,8 +21,7 @@ class Embedding(torch.nn.Module):
         self.padding_idx_: int = pad_token
 
     def forward(self, tokens: torch.Tensor) -> torch.Tensor:
-        data = F.embedding(tokens, self.token_embedding_,
-                           padding_idx=self.padding_idx_)
+        data = F.embedding(tokens, self.token_embedding_, padding_idx=self.padding_idx_)
         data.requires_grad_(True)
         return data
 
@@ -77,14 +76,13 @@ class Transformer(torch.nn.Module):
         self.head_dim_ = args.dim_ // args.n_heads_
 
     def init_lora_layer_weight(self,
-                               adapter_name: str,
-                               r: int,
-                               lora_alpha: int,
-                               lora_dropout: float,
-                               target: Dict[str, bool],
-                               weight: Optional[Dict[str, torch.Tensor]]):
-        linear_layer_list = [self.wk_, self.wq_, self.wv_,
-                             self.wo_, self.w1_, self.w2_, self.w3_]
+                                adapter_name: str,
+                                r: int,
+                                lora_alpha: int,
+                                lora_dropout: float,
+                                target: Dict[str, bool],
+                                weight: Optional[Dict[str, torch.Tensor]]):
+        linear_layer_list = [self.wk_, self.wq_, self.wv_, self.wo_, self.w1_, self.w2_, self.w3_]
         linear_layer_name_list = [
             "k_proj", "q_proj", "v_proj", "o_proj", "w1_proj", "w2_proj", "w3_proj"]
 
@@ -204,8 +202,7 @@ class LlamaModel(LLMModel):
 
     # train model or inference model: output is probs
     def forward(self, input: MultiLoraBatchData) -> torch.Tensor:
-        tokens = torch.tensor(input.batch_tokens_,
-                              dtype=torch.int64).to(self.device_)
+        tokens = torch.tensor(input.batch_tokens_, dtype=torch.int64).to(self.device_)
 
         # only for train
         mask = precompute_mask(input, self.n_heads_, self.device_)
@@ -223,11 +220,11 @@ class LlamaModel(LLMModel):
         return data[0]
 
     def init_lora_weight(self, adapter_name: str,
-                         r: int,
-                         lora_alpha: int,
-                         lora_dropout: float,
-                         target: Dict[str, bool],
-                         weight: Optional[Dict[str, torch.Tensor]]):
+                            r: int,
+                            lora_alpha: int,
+                            lora_dropout: float,
+                            target: Dict[str, bool],
+                            weight: Optional[Dict[str, torch.Tensor]]):
         for transformer_layer in self.layers_:
             transformer_layer.init_lora_layer_weight(
                 adapter_name, r, lora_alpha, lora_dropout, target, weight)
@@ -324,9 +321,9 @@ class LlamaModel(LLMModel):
                     train_paramas[adapter_name] = []
 
                 lora_layer_list = [transformer_layer.wq_.loras_, transformer_layer.wk_.loras_,
-                                   transformer_layer.wv_.loras_, transformer_layer.wo_.loras_,
-                                   transformer_layer.w1_.loras_, transformer_layer.w2_.loras_,
-                                   transformer_layer.w3_.loras_]
+                                    transformer_layer.wv_.loras_, transformer_layer.wo_.loras_,
+                                    transformer_layer.w1_.loras_, transformer_layer.w2_.loras_,
+                                    transformer_layer.w3_.loras_]
 
                 for lora_layer in lora_layer_list:
                     if adapter_name in lora_layer:
@@ -345,19 +342,17 @@ class LlamaModel(LLMModel):
             layer_prefix_name = "base_model.model.model.layers." + \
                 str(idx) + "." + "self_attn."
             lora_layer_list = [transformer_layer.wq_, transformer_layer.wk_,
-                               transformer_layer.wv_, transformer_layer.wo_,
-                               transformer_layer.w1_, transformer_layer.w2_,
-                               transformer_layer.w3_]
+                                transformer_layer.wv_, transformer_layer.wo_,
+                                transformer_layer.w1_, transformer_layer.w2_,
+                                transformer_layer.w3_]
             lora_layer_name_list = [
                 "q_proj", "k_proj", "v_proj", "o_proj", "w1_proj", "w2_proj", "w3_proj"]
             for idx, lora_layer in enumerate(lora_layer_list):
                 if lora_name in lora_layer.loras_:
                     if lora_layer_name_list[idx] not in target_modules:
                         target_modules.append(lora_layer_name_list[idx])
-                    lora_weight_dict[layer_prefix_name +
-                                     f"{lora_layer_name_list[idx]}.lora_A.weight"] = lora_layer.loras_[lora_name].lora_a_
-                    lora_weight_dict[layer_prefix_name +
-                                     f"{lora_layer_name_list[idx]}.lora_B.weight"] = lora_layer.loras_[lora_name].lora_b_
+                    lora_weight_dict[layer_prefix_name + f"{lora_layer_name_list[idx]}.lora_A.weight"] = lora_layer.loras_[lora_name].lora_a_
+                    lora_weight_dict[layer_prefix_name + f"{lora_layer_name_list[idx]}.lora_B.weight"] = lora_layer.loras_[lora_name].lora_b_
         return lora_weight_dict, target_modules
 
     def sequential_module(self) -> torch.nn.Sequential:

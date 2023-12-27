@@ -11,8 +11,7 @@ def precompute_mask(input: MultiLoraBatchData,
                     n_head: int,
                     device: str,
                     dtype: torch.dtype = torch.float32) -> torch.Tensor:
-    mask = torch.full((len(input.prompts_), n_head,
-                      input.batch_seq_len_, input.batch_seq_len_), float("-inf"))
+    mask = torch.full((len(input.prompts_), n_head, input.batch_seq_len_, input.batch_seq_len_), float("-inf"))
     mask = torch.triu(mask, diagonal=1).to(torch.float32).cuda(device)
 
     for idx, _ in enumerate(input.prompts_):
@@ -59,8 +58,7 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
             batch_size, seq_len, n_kv_heads * n_rep, head_dim)
 
 
-def apply_rotary_emb(xq: torch.Tensor, xk: torch.Tensor,
-                     angle: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
+def apply_rotary_emb(xq: torch.Tensor, xk: torch.Tensor, angle: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
     # data shape is: batch_size * max_seq_len * n_head * n_dim
     _, max_seq_len, _, dim_head = xq.shape
 

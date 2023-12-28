@@ -83,8 +83,7 @@ class Transformer(torch.nn.Module):
                                 target: Dict[str, bool],
                                 weight: Optional[Dict[str, torch.Tensor]]):
         linear_layer_list = [self.wk_, self.wq_, self.wv_, self.wo_, self.w1_, self.w2_, self.w3_]
-        linear_layer_name_list = [
-            "k_proj", "q_proj", "v_proj", "o_proj", "w1_proj", "w2_proj", "w3_proj"]
+        linear_layer_name_list = ["k_proj", "q_proj", "v_proj", "o_proj", "w1_proj", "w2_proj", "w3_proj"]
 
         for idx, layer_name in enumerate(linear_layer_name_list):
             if layer_name in target and target[layer_name]:
@@ -100,8 +99,7 @@ class Transformer(torch.nn.Module):
                     lora_a = weight[lora_a_name]
                     lora_b = weight[lora_b_name]
 
-                linear_layer_list[idx].init_lora_weight(
-                    adapter_name, r, lora_alpha, lora_dropout, lora_a, lora_b)
+                linear_layer_list[idx].init_lora_weight(adapter_name, r, lora_alpha, lora_dropout, lora_a, lora_b)
 
     # @torch.compile
     def forward(self,
@@ -131,14 +129,14 @@ class Transformer(torch.nn.Module):
         xk = repeat_kv(xk, self.n_rep_)
         xv = repeat_kv(xv, self.n_rep_)
 
-        attention_score = xformers.ops.memory_efficient_attention(
-            xq, xk, xv, mask)
+        attention_score = xformers.ops.memory_efficient_attention(xq, xk, xv, mask)
         attention_score = attention_score.view(batch_size, max_seq_len, -1)
 
         # get output attention score
         data = data + self.wo_.forward(attention_score, input_args)
 
         # feed forward fully connected
+        # (?) forward
         score_norm_data = self.ffn_norm_.forward(data)
         w1 = self.w1_.forward(score_norm_data, input_args)
         w3 = self.w3_.forward(score_norm_data, input_args)
@@ -164,8 +162,7 @@ class LlamaSequentialWrapper(torch.nn.Module):
             return (output, ) + input[1:]
         elif module_name == "Transformer":
             if input[-1]:
-                output = CheckpointRecomputeFunction.apply(
-                    self.wrapper_module_.forward, *input[:-1])
+                output = CheckpointRecomputeFunction.apply(self.wrapper_module_.forward, *input[:-1])
             else:
                 output = self.wrapper_module_.forward(*input[:-1])
             return (output, ) + input[1:]
@@ -226,8 +223,7 @@ class LlamaModel(LLMModel):
                             target: Dict[str, bool],
                             weight: Optional[Dict[str, torch.Tensor]]):
         for transformer_layer in self.layers_:
-            transformer_layer.init_lora_layer_weight(
-                adapter_name, r, lora_alpha, lora_dropout, target, weight)
+            transformer_layer.init_lora_layer_weight(adapter_name, r, lora_alpha, lora_dropout, target, weight)
 
     def from_pretrained(path: str,
                         device: str,
@@ -241,8 +237,7 @@ class LlamaModel(LLMModel):
             if log_fn is not None:
                 log_fn('Loading model with quantization, bits = %i' % bits)
             from transformers import BitsAndBytesConfig
-            compute_dtype = (torch.float16 if fp16 else (
-                torch.bfloat16 if bf16 else torch.float32))
+            compute_dtype = (torch.float16 if fp16 else (torch.bfloat16 if bf16 else torch.float32))
             llama_model = LlamaForCausalLM.from_pretrained(
                 path,
                 load_in_4bit=bits == 4,
@@ -267,47 +262,35 @@ class LlamaModel(LLMModel):
         llama_args = LLMModelArgs()
         llama_args.dim_ = llama_model.config.hidden_size
         llama_args.n_heads_ = llama_model.config.num_attention_heads
-        llama_args.n_kv_heads_ = llama_args.n_heads_ if not hasattr(
-            llama_model.config, "num_key_value_heads") else llama_model.config.num_key_value_heads
+        llama_args.n_kv_heads_ = llama_args.n_heads_ if not hasattr(llama_model.config, "num_key_value_heads") else llama_model.config.num_key_value_heads
         llama_args.n_layers_ = llama_model.config.num_hidden_layers
         llama_args.norm_eps_ = llama_model.config.rms_norm_eps
         llama_args.vocab_size_ = llama_model.config.vocab_size
-        llama_args.max_seq_len_ = 4096 if not hasattr(
-            llama_model.config, "max_sequence_length") else llama_model.config.max_sequence_length
+        llama_args.max_seq_len_ = 4096 if not hasattr(llama_model.config, "max_sequence_length") else llama_model.config.max_sequence_length
         llama_args.pad_token_id_ = -1
         llama_args.device = device
 
         model = LlamaModel(llama_args)
 
-        embedding_weight = llama_model.model.embed_tokens.weight.to(
-            device=device).requires_grad_(False)
-        model.token_embedding_ = Embedding(
-            embedding_weight, llama_args.pad_token_id_)
+        embedding_weight = llama_model.model.embed_tokens.weight.to(device=device).requires_grad_(False)
+        model.token_embedding_ = Embedding(embedding_weight, llama_args.pad_token_id_)
 
-        output_weight = llama_model.lm_head.weight.to(
-            dtype=torch.float32, device=device).requires_grad_(False)
+        output_weight = llama_model.lm_head.weight.to(dtype=torch.float32, device=device).requires_grad_(False)
         model.output_ = OutputLayer(output_weight)
 
-        norm_weight = llama_model.model.norm.weight.to(
-            device=device).requires_grad_(False)
+        norm_weight = llama_model.model.norm.weight.to(device=device).requires_grad_(False)
         model.norm_ = RMSNormLayer(norm_weight, model.norm_eps_)
 
         for idx, layer in enumerate(llama_model.model.layers):
-            model.layers_[idx].wq_ = Linear(
-                layer.self_attn.q_proj, device=device)
-            model.layers_[idx].wk_ = Linear(
-                layer.self_attn.k_proj, device=device)
-            model.layers_[idx].wv_ = Linear(
-                layer.self_attn.v_proj, device=device)
-            model.layers_[idx].wo_ = Linear(
-                layer.self_attn.o_proj, device=device)
+            model.layers_[idx].wq_ = Linear(layer.self_attn.q_proj, device=device)
+            model.layers_[idx].wk_ = Linear(layer.self_attn.k_proj, device=device)
+            model.layers_[idx].wv_ = Linear(layer.self_attn.v_proj, device=device)
+            model.layers_[idx].wo_ = Linear(layer.self_attn.o_proj, device=device)
             model.layers_[idx].w1_ = Linear(layer.mlp.gate_proj, device=device)
             model.layers_[idx].w2_ = Linear(layer.mlp.down_proj, device=device)
             model.layers_[idx].w3_ = Linear(layer.mlp.up_proj, device=device)
-            model.layers_[idx].attention_norm_ = RMSNorm(
-                layer.input_layernorm.weight.to(device=device).requires_grad_(False), model.norm_eps_)
-            model.layers_[idx].ffn_norm_ = RMSNorm(
-                layer.post_attention_layernorm.weight.to(device=device).requires_grad_(False), model.norm_eps_)
+            model.layers_[idx].attention_norm_ = RMSNorm(layer.input_layernorm.weight.to(device=device).requires_grad_(False), model.norm_eps_)
+            model.layers_[idx].ffn_norm_ = RMSNorm(layer.post_attention_layernorm.weight.to(device=device).requires_grad_(False), model.norm_eps_)
 
         return model
 
@@ -334,13 +317,12 @@ class LlamaModel(LLMModel):
 
         return train_paramas
 
+    # return the lora weight and target_module's name
     def get_lora_weight_dict(self, lora_name: str) -> Tuple[Dict[str, torch.Tensor], List[str]]:
-        # return the lora weight and target_module's name
         lora_weight_dict = {}
         target_modules = []
         for idx, transformer_layer in enumerate(self.layers_):
-            layer_prefix_name = "base_model.model.model.layers." + \
-                str(idx) + "." + "self_attn."
+            layer_prefix_name = "base_model.model.model.layers." + str(idx) + "." + "self_attn."
             lora_layer_list = [transformer_layer.wq_, transformer_layer.wk_,
                                 transformer_layer.wv_, transformer_layer.wo_,
                                 transformer_layer.w1_, transformer_layer.w2_,
@@ -358,8 +340,7 @@ class LlamaModel(LLMModel):
     def sequential_module(self) -> torch.nn.Sequential:
         seq_module = OrderedDict()
 
-        seq_module.update(
-            {"embedding": LlamaSequentialWrapper(self.token_embedding_)})
+        seq_module.update({"embedding": LlamaSequentialWrapper(self.token_embedding_)})
         seq_module.move_to_end("embedding")
 
         for index, layer in enumerate(self.layers_):

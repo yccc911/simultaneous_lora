@@ -94,13 +94,13 @@ def load_base_model(config: Dict[str, any]) -> Tuple[mlora.Tokenizer, mlora.LLMM
             bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
             log_fn=log
         )
-    elif args.model_type == "chatglm":
-        model = mlora.ChatGLMModel.from_pretrained(
-            path=args.base_model,
-            device=args.device,
-            bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
-            log_fn=log
-        )
+    # elif args.model_type == "chatglm":
+    #     model = mlora.ChatGLMModel.from_pretrained(
+    #         path=args.base_model,
+    #         device=args.device,
+    #         bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
+    #         log_fn=log
+    #     )
     else:
         raise f"unknown model type {args.model_type}"
 

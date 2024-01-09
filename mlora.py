@@ -149,11 +149,9 @@ def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]
             momentum = 0
             if "momentum" in lora_config:
                 momentum = lora_config["momentum"]
-            for lora_config in config["lora"]:
-                optimizer[adapter_name] = (torch.optim.SGD(train_paramas[adapter_name], lr=lr, momentum=momentum))
+            optimizer[adapter_name] = (torch.optim.SGD(train_paramas[adapter_name], lr=lr, momentum=momentum))
         elif optim_name == "adamw":
-            for lora_config in config["lora"]:
-                optimizer[adapter_name] = (torch.optim.AdamW(train_paramas[adapter_name], lr=lr))
+            optimizer[adapter_name] = (torch.optim.AdamW(train_paramas[adapter_name], lr=lr))
         else:
             raise f"unknown optimizer {optim_name}"
 
@@ -172,11 +170,9 @@ def get_general_optimizer(config: Dict[str, any], general_train_para: torch.Tens
         momentum = 0
         if "momentum" in general_lora:
             momentum = general_lora["momentum"]
-        for general_lora in config["lora"]:
-            general_optimizer = (torch.optim.SGD(general_train_para, lr=lr, momentum=momentum))
+        general_optimizer = (torch.optim.SGD(general_train_para, lr=lr, momentum=momentum))
     elif optim_name == "adamw":
-        for lora_config in config["lora"]:
-            general_optimizer = (torch.optim.AdamW(general_train_para, lr=lr))
+        general_optimizer = (torch.optim.AdamW(general_train_para, lr=lr))
     else:
         raise f"unknown optimizer {optim_name}"
 
@@ -191,8 +187,8 @@ def get_accumulation_steps(config: Dict[str, any]) -> int:
 
     if batch_size < micro_batch_size or batch_size % micro_batch_size != 0:
         raise f"error batch_size {batch_size} and micro batch size {micro_batch_size}"
-    ret_accumulation_step = batch_size / micro_batch_size
 
+    ret_accumulation_step = batch_size / micro_batch_size
     return ret_accumulation_step
 
 

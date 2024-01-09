@@ -5,33 +5,29 @@ import os
 import json
 import torch
 
+
 # convert huggingface model to pytorch model
-
-
 def convert_hf_to_pth(source: str, dest: str):
     src_model = LlamaForCausalLM.from_pretrained(source)
     # src_model.eval()
     torch.save(src_model.state_dict(), dest)
 
+
+# TODO sace general lora model
 # save lora model
-
-
 def save_lora_model(model: LlamaModel, config: Dict[str, str], dir_suffix=""):
     for lora_config in config["lora"]:
         lora_name = lora_config["name"]
         lora_output_dir = lora_config["output"]
         if dir_suffix != "":
-            lora_output_dir += os.sep + \
-                lora_config["output"] + "_" + dir_suffix
+            lora_output_dir += os.sep + lora_config["output"] + "_" + dir_suffix
 
         if not os.path.exists(lora_output_dir):
             os.makedirs(lora_output_dir)
 
-        lora_weight_dict, target_modules = model.get_lora_weight_dict(
-            lora_name)
+        lora_weight_dict, target_modules = model.get_lora_weight_dict(lora_name)
 
-        torch.save(lora_weight_dict, lora_output_dir +
-                   os.sep + "adapter_model.bin")
+        torch.save(lora_weight_dict, lora_output_dir + os.sep + "adapter_model.bin")
 
         adapter_config = {}
         adapter_config["lora_alpha"] = lora_config["alpha"]

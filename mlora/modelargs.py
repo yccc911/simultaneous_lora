@@ -28,16 +28,9 @@ class LLMModelArgs:
 
 
 @dataclass
-class LoraBatchDataConfig:
-    adapter_name_: str = ""
-    batch_start_idx_: int = -1
-    batch_end_idx_: int = -1
-
-
-@dataclass
-class MultiLoraBatchData:
+class LoraBatchData:
     prompts_: List[str] = None
-    lora_batch_data_config_: List[LoraBatchDataConfig] = None
+    adapter_name_: str = ""
 
     # batch seq len
     # the expand right and tokens without pad len

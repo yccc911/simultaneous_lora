@@ -94,13 +94,6 @@ def load_base_model(config: Dict[str, any]) -> Tuple[mlora.Tokenizer, mlora.LLMM
             bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
             log_fn=log
         )
-    # elif args.model_type == "chatglm":
-    #     model = mlora.ChatGLMModel.from_pretrained(
-    #         path=args.base_model,
-    #         device=args.device,
-    #         bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
-    #         log_fn=log
-    #     )
     else:
         raise f"unknown model type {args.model_type}"
 
@@ -111,9 +104,23 @@ def load_base_model(config: Dict[str, any]) -> Tuple[mlora.Tokenizer, mlora.LLMM
     return tokenizer, model
 
 
+# 1 general lora & multiple lora models
 def init_lora_model(config: Dict[str, any], llm_model: mlora.LLMModel):
     if args.disable_lora:
         return
+
+    general_lora = config['general_lora']
+    lora_weight = None
+    if args.load_lora:
+        adapter_file_path = general_lora["output"] + "/adapter_model.bin"
+        print(f"load {adapter_file_path}")
+        lora_weight = torch.load(adapter_file_path)
+    llm_model.init_lora_weight(general_lora['name'],
+                            general_lora["r"],
+                            general_lora["alpha"],
+                            general_lora["dropout"],
+                            general_lora["target_modules"],
+                            lora_weight)
 
     for lora_config in config["lora"]:
         lora_weight = None
@@ -123,15 +130,15 @@ def init_lora_model(config: Dict[str, any], llm_model: mlora.LLMModel):
             lora_weight = torch.load(adapter_file_path)
 
         llm_model.init_lora_weight(lora_config["name"],
-                                   lora_config["r"],
-                                   lora_config["alpha"],
-                                   lora_config["dropout"],
-                                   lora_config["target_modules"],
-                                   lora_weight)
+                                    general_lora["r"],
+                                    general_lora["alpha"],
+                                    lora_config["dropout"],
+                                    lora_config["target_modules"],
+                                    lora_weight)
 
 
+# to get optimizer per lora model
 def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]) -> Dict[str, torch.optim.Optimizer]:
-    # get optimizer per lora model
     optimizer: Dict[str, torch.optim.Optimizer] = {}
 
     for lora_config in config["lora"]:
@@ -142,25 +149,50 @@ def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]
             momentum = 0
             if "momentum" in lora_config:
                 momentum = lora_config["momentum"]
-            optimizer[adapter_name] = (torch.optim.SGD(
-                train_paramas[adapter_name], lr=lr, momentum=momentum))
+            for lora_config in config["lora"]:
+                optimizer[adapter_name] = (torch.optim.SGD(train_paramas[adapter_name], lr=lr, momentum=momentum))
         elif optim_name == "adamw":
-            optimizer[adapter_name] = (torch.optim.AdamW(
-                train_paramas[adapter_name], lr=lr))
+            for lora_config in config["lora"]:
+                optimizer[adapter_name] = (torch.optim.AdamW(train_paramas[adapter_name], lr=lr))
         else:
             raise f"unknown optimizer {optim_name}"
 
     return optimizer
 
 
-def get_accumulation_steps(config: Dict[str, any]) -> Dict[str, int]:
-    ret_accumulation_step = {}
-    for lora_config in config["lora"]:
-        batch_size = lora_config["batch_size"]
-        micro_batch_size = lora_config["micro_batch_size"]
-        if batch_size < micro_batch_size or batch_size % micro_batch_size != 0:
-            raise f"error batch_size {batch_size} and micro batch size {micro_batch_size}"
-        ret_accumulation_step[lora_config["name"]] = batch_size / micro_batch_size
+# to get optimizer for general lora
+def get_general_optimizer(config: Dict[str, any], general_train_para: torch.Tensor) -> torch.optim.Optimizer:
+    general_optimizer: torch.optim.Optimizer = None
+
+    general_lora = config['general_lora']
+    optim_name = general_lora["optim"]
+    lr = general_lora["lr"]
+
+    if optim_name == "sgd":
+        momentum = 0
+        if "momentum" in general_lora:
+            momentum = general_lora["momentum"]
+        for general_lora in config["lora"]:
+            general_optimizer = (torch.optim.SGD(general_train_para, lr=lr, momentum=momentum))
+    elif optim_name == "adamw":
+        for lora_config in config["lora"]:
+            general_optimizer = (torch.optim.AdamW(general_train_para, lr=lr))
+    else:
+        raise f"unknown optimizer {optim_name}"
+
+    return general_optimizer
+
+
+# (?) should be in accordance with the number of training inputs from every dataset
+def get_accumulation_steps(config: Dict[str, any]) -> int:
+    general_lora = config['general_lora']
+    batch_size = general_lora["batch_size"]
+    micro_batch_size = general_lora["micro_batch_size"]
+
+    if batch_size < micro_batch_size or batch_size % micro_batch_size != 0:
+        raise f"error batch_size {batch_size} and micro batch size {micro_batch_size}"
+    ret_accumulation_step = batch_size / micro_batch_size
+
     return ret_accumulation_step
 
 
@@ -168,100 +200,105 @@ def get_accumulation_steps(config: Dict[str, any]) -> Dict[str, int]:
 def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.Dispatcher):
     # the train paramas per lora model
     all_train_paramas: Dict[str, List[torch.Tensor]] = llm_model.get_train_paramas(config)
+    # the train para of the general lora model
+    general_train_para: torch.Tensor = llm_model.get_general_train_paramas()
     all_optimizer: Dict[str, torch.optim.Optimizer] = get_optimizer(config, all_train_paramas)
-    accumulation_step: Dict[str, int] = get_accumulation_steps(config)
+    general_optimizer: torch.optim.Optimizer = get_general_optimizer(config, general_train_para)
+
+    accumulation_step: int = get_accumulation_steps(config)
 
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    step_cnt = 0
-    while not dispatcher.check_task_done():
-        input: mlora.MultiLoraBatchData = dispatcher.get_train_data()
-        for lora in input.lora_batch_data_config_:
-            all_optimizer[lora.adapter_name_].zero_grad()
+    step_cnt = {
+        "general_lora": 0
+    }
+    for lora in config['lora']:
+        step_cnt[lora['name']] = 0
 
-        step_cnt += 1
+    # start training
+    while not dispatcher.check_task_done():
+        input: mlora.LoraBatchData = dispatcher.get_train_data()
 
         output = llm_model.forward(input)
         labels = torch.tensor(input.batch_tokens_, dtype=torch.long).to(args.device)
 
-        total_loss = None
-        for lora_config in input.lora_batch_data_config_:
-            start_idx = lora_config.batch_start_idx_
-            end_idx = lora_config.batch_end_idx_
-            loss_input = output[start_idx:end_idx][..., :-1, :].contiguous().view(-1, llm_model.vocab_size_)
-            loss_target = labels[start_idx:end_idx][..., 1:].contiguous().view(-1)
-            loss = loss_fn(loss_input, loss_target) / accumulation_step[lora_config.adapter_name_]
-            print(f"    adapter: {lora_config.adapter_name_} loss: {loss}")
-            if total_loss is None:
-                total_loss = loss
-            else:
-                total_loss += loss
+        # !!!!
+        loss_input = output[..., :-1, :].contiguous().view(-1, llm_model.vocab_size_)
+        loss_target = labels[..., 1:].contiguous().view(-1)
+        loss = loss_fn(loss_input, loss_target) / accumulation_step[input.adapter_name_]
+        print(f"    adapter: {input.adapter_name_} loss: {loss}")
 
-        total_loss.backward()
-        for lora in input.lora_batch_data_config_:
-            if step_cnt % accumulation_step[lora.adapter_name_] == 0:
-                all_optimizer[lora.adapter_name_].step()
+        step_cnt['general_lora'] += 1
 
-        if step_cnt % config["save_step"] == 0:
+        loss.backward()
+        # TODO to update the independent lora and general lora separately
+        if step_cnt[input.adapter_name_] % accumulation_step == 0:
+            all_optimizer[input.adapter_name_].step()
+            all_optimizer[input.adapter_name_].zero_grad()
+        if step_cnt['general_lora'] % accumulation_step == 0:
+            general_optimizer.step()
+            general_optimizer.zero_grad()
+
+        if step_cnt[input.adapter_name_] % config["save_step"] == 0:
             mlora.save_lora_model(llm_model, config, f"{step_cnt}")
 
     mlora.save_lora_model(llm_model, config)
 
 
-def inference(config: Dict[str, any],
-              llm_model: mlora.LLMModel,
-              tokenizer: mlora.Tokenizer):
-    lora_adapter_num = len(config["lora"])
-    batch_data_config: List[mlora.LoraBatchDataConfig] = []
+# def inference(config: Dict[str, any],
+#                 llm_model: mlora.LLMModel,
+#                 tokenizer: mlora.Tokenizer):
+#     lora_adapter_num = len(config["lora"])
+#     batch_data_config: List[mlora.LoraBatchDataConfig] = []
 
-    for idx, lora_config in enumerate(config["lora"]):
-        adapter_name = lora_config["name"]
-        batch_data_config.append(mlora.LoraBatchDataConfig(
-            adapter_name, idx, idx + 1))
+#     for idx, lora_config in enumerate(config["lora"]):
+#         adapter_name = lora_config["name"]
+#         batch_data_config.append(mlora.LoraBatchDataConfig(
+#             adapter_name, idx, idx + 1))
 
-    inference_max_len = 128
+#     inference_max_len = 128
 
-    while True:
-        input_raw = input("INPUT WITHOUT PROMPT: ")
-        if input_raw == "QUIT":
-            return
+#     while True:
+#         input_raw = input("INPUT WITHOUT PROMPT: ")
+#         if input_raw == "QUIT":
+#             return
 
-        tokens = tokenizer.encode(input_raw, True, False)
-        token_len = len(tokens)
-        while len(tokens) < inference_max_len:
-            tokens.append(tokenizer.pad_id_)
+#         tokens = tokenizer.encode(input_raw, True, False)
+#         token_len = len(tokens)
+#         while len(tokens) < inference_max_len:
+#             tokens.append(tokenizer.pad_id_)
 
-        input_data = mlora.MultiLoraBatchData(
-            prompts_=[input_raw] * lora_adapter_num,
-            lora_batch_data_config_=batch_data_config,
-            batch_tokens_=[tokens] * lora_adapter_num,
-            tokens_len_without_pad_=[token_len] * lora_adapter_num,
-            batch_seq_len_=inference_max_len,
-            expand_side_=["right"] * lora_adapter_num,
-            inference_model_=True)
+#         input_data = mlora.MultiLoraBatchData(
+#             prompts_=[input_raw] * lora_adapter_num,
+#             lora_batch_data_config_=batch_data_config,
+#             batch_tokens_=[tokens] * lora_adapter_num,
+#             tokens_len_without_pad_=[token_len] * lora_adapter_num,
+#             batch_seq_len_=inference_max_len,
+#             expand_side_=["right"] * lora_adapter_num,
+#             inference_model_=True)
 
-        eos_flag: List[bool] = [False] * lora_adapter_num
-        for pos in range(token_len, inference_max_len):
-            with torch.no_grad():
-                # batch_size, seq_len, voc_logs
-                outputs = llm_model.forward(input_data)
-                next_token = outputs[:, pos - 1, :]
-                next_token = torch.argmax(next_token, dim=-1)
-                for idx in range(len(input_data.batch_tokens_)):
-                    input_data.batch_tokens_[idx][pos] = next_token[idx].item()
-                    # end of the sentence
-                    if next_token[idx].item() == tokenizer.eos_id_:
-                        eos_flag[idx] = True
-                    input_data.tokens_len_without_pad_[
-                        idx] = input_data.tokens_len_without_pad_[idx] + 1
-            # check if the all sentence end
-            have_all_done = all(flag for flag in eos_flag)
-            if have_all_done:
-                break
+#         eos_flag: List[bool] = [False] * lora_adapter_num
+#         for pos in range(token_len, inference_max_len):
+#             with torch.no_grad():
+#                 # batch_size, seq_len, voc_logs
+#                 outputs = llm_model.forward(input_data)
+#                 next_token = outputs[:, pos - 1, :]
+#                 next_token = torch.argmax(next_token, dim=-1)
+#                 for idx in range(len(input_data.batch_tokens_)):
+#                     input_data.batch_tokens_[idx][pos] = next_token[idx].item()
+#                     # end of the sentence
+#                     if next_token[idx].item() == tokenizer.eos_id_:
+#                         eos_flag[idx] = True
+#                     input_data.tokens_len_without_pad_[
+#                         idx] = input_data.tokens_len_without_pad_[idx] + 1
+#             # check if the all sentence end
+#             have_all_done = all(flag for flag in eos_flag)
+#             if have_all_done:
+#                 break
 
-        for idx, output in enumerate(input_data.batch_tokens_):
-            print(f"# LORA{idx} OUTPUT IS:")
-            print(tokenizer.decode(output))
+#         for idx, output in enumerate(input_data.batch_tokens_):
+#             print(f"# LORA{idx} OUTPUT IS:")
+#             print(tokenizer.decode(output))
 
 
 # Main Function
@@ -276,8 +313,8 @@ if __name__ == "__main__":
 
     torch.cuda.empty_cache()
 
-    if args.inference:
-        inference(config, model, tokenizer)
-    else:
-        dispatcher = mlora.Dispatcher(config, tokenizer)
-        train(config, model, dispatcher)
+    # if args.inference:
+        # inference(config, model, tokenizer)
+    # else:
+    dispatcher = mlora.Dispatcher(config, tokenizer)
+    train(config, model, dispatcher)

@@ -1,6 +1,5 @@
 from mlora import Tokenizer
-from mlora import MultiLoraBatchData
-from mlora import LoraBatchDataConfig
+from mlora import LoraBatchData
 
 import sys
 import math
@@ -8,7 +7,7 @@ import json
 import random
 import datasets
 from dataclasses import dataclass
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Tuple
 
 
 Tokens = List[int]
@@ -38,13 +37,13 @@ class TrainTask():
 
     adapter_name_: str = ""
     data_path_: str = ""
-    test_data_path_: str = ""
+    # test_data_path_: str = ""
     prompt_template_path_: str = ""
 
     # the token list for train and test
     val_set_size: Union[int, float] = -1
     train_token_data_: List[TrainData] = None
-    test_token_data_: List[TrainData] = None
+    # test_token_data_: List[TrainData] = None
 
     template_data_: TemplateData = None
 
@@ -52,47 +51,48 @@ class TrainTask():
     total_epoch_num_: int = -1
     max_train_batch_size_: int = -1
     max_train_micro_batch_size_: int = -1
-    max_test_batch_size_: int = -1
+    # max_test_batch_size_: int = -1
 
     train_cutoff_len_: int = -1
-    group_by_length_: bool = False
+    # group_by_length_: bool = False
     expand_side_: str = "left"
     expand_token_id_: int = -1
 
     # count the stat of train and test data
     epoch_cnt_: int = 1
     next_train_data_start_idx_: int = 0
-    next_test_data_start_idx_: int = 0
+    # next_test_data_start_idx_: int = 0
 
     def __init__(self,
-                 tokenizer: Tokenizer,
-                 adapter_name: str,
-                 data_path: str,
-                 val_set_size: Union[int, float],
-                 test_data_path: str,
-                 prompt_template_path: str,
-                 total_epoch_num: int,
-                 max_train_batch_size: int,
-                 max_train_micro_batch_size: int,
-                 max_test_batch_size: int,
-                 train_cutoff_len: int = 256,
-                 group_by_length: bool = True,
-                 expand_side: str = "right",
-                 expand_token_id: int = 0):
+                tokenizer: Tokenizer,
+                adapter_name: str,
+                data_path: str,
+                # val_set_size: Union[int, float],
+                #  test_data_path: str,
+                prompt_template_path: str,
+                total_epoch_num: int,
+                max_train_batch_size: int,
+                max_train_micro_batch_size: int,
+                #  max_test_batch_size: int,
+                train_cutoff_len: int = 256,
+                # group_by_length: bool = True,
+                expand_side: str = "right",
+                expand_token_id: int = 0):
         self.tokenizer_ = tokenizer
         self.adapter_name_ = adapter_name
         self.data_path_ = data_path
-        self.val_set_size = val_set_size
-        self.test_data_path_ = test_data_path
+        # self.val_set_size = val_set_size
+        # self.test_data_path_ = test_data_path
         self.prompt_template_path_ = prompt_template_path
         self.total_epoch_num_ = total_epoch_num
         self.max_train_batch_size_ = max_train_batch_size
         self.max_train_micro_batch_size_ = max_train_micro_batch_size
-        self.max_test_batch_size_ = max_test_batch_size
+        # self.max_test_batch_size_ = max_test_batch_size
         self.train_cutoff_len_ = train_cutoff_len
-        self.group_by_length_ = group_by_length
+        # self.group_by_length_ = group_by_length
         self.expand_side_ = expand_side
         self.expand_token_id_ = expand_token_id
+
 
     # "parameter": ["input", "output", "instruction"],
     # "prompt": "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Output:\n{output}\n",
@@ -107,23 +107,22 @@ class TrainTask():
             prompt_without_input_=template_config_obj["prompt_no_input"]
         )
 
+
     # data
-    # [
-    #     {
-    #         "instruction": "Instruction demo.",
-    #         "input": "Input demo.",
-    #         "output": "Output demo."
-    #     },
-    #     {
-    #         "instruction": "Instruction demo.",
-    #         "output": "Output demo."
-    #     }
-    # ]
+    # [{
+    #     "instruction": "Instruction demo.",
+    #     "input": "Input demo.",
+    #     "output": "Output demo."
+    # }, {
+    #     "instruction": "Instruction demo.",
+    #     "output": "Output demo."
+    # }]
     # read from file and replace the template
     # return complete, assembled training text input
     def __parse_data_with_template(self, data: List) -> List[str]:
-
         ret_data_text: List[str] = []
+
+        # for every instance in training dataset
         for raw_data in data:
             raw_data_obj = {}
 
@@ -135,20 +134,22 @@ class TrainTask():
                 raw_data_obj[para] = raw_data[para]
 
             text_data: str = ""
+            # load template text
             if check_without_input_flag:
                 text_data = self.template_data_.prompt_without_input_
             else:
                 text_data = self.template_data_.prompt_
 
+			# replace parameter in template text with its value
             for para in self.template_data_.parameter_:
                 if para not in raw_data_obj:
                     continue
-                text_data = text_data.replace(
-                    "{" + para + "}", raw_data[para])
+                text_data = text_data.replace("{" + para + "}", raw_data[para])
 
             ret_data_text.append(text_data)
 
         return ret_data_text
+
 
     # return training/inference text input & their encoded tokens
     def __encode_prompt(self, lora_text_data: List[str], is_train_data: bool = True) -> List[TrainData]:
@@ -163,32 +164,22 @@ class TrainTask():
 
             ret.append(TrainData(prompt_=text, tokens_=tokens))
             if idx % 10000 == 0:
-                print(
-                    f"encode text data {self.adapter_name_}: {idx}/{len(lora_text_data)}")
+                print(f"encode text data {self.adapter_name_}: {idx}/{len(lora_text_data)}")
 
-        if is_train_data and self.group_by_length_:
-            ret.sort(key=lambda x: len(x.tokens_), reverse=True)
-        else:
-            random.shuffle(ret)
+        # if is_train_data and self.group_by_length_:
+        #     ret.sort(key=lambda x: len(x.tokens_), reverse=True)
+        # else:
+        #     random.shuffle(ret)
 
         return ret
 
-    # initialize training &/ testing data according to config
+
+    # initialize & load training data according to config
     def load_data(self):
         self.__load_template_data()
         data = load_dataset(self.data_path_)
-        if self.test_data_path_ is None:
-            if self.val_set_size is None or self.val_set_size <= 0:
-                self.train_token_data_ = self.__encode_prompt(self.__parse_data_with_template(data["train"]), True)
-                self.test_token_data_ = []
-            else:
-                train_val = data["train"].train_test_split(test_size=self.val_set_size)
-                self.train_token_data_ = self.__encode_prompt(self.__parse_data_with_template(train_val["train"]), True)
-                self.test_token_data_ = self.__encode_prompt(self.__parse_data_with_template(train_val["test"]), True)
-        else:
-            train_data = load_dataset(self.test_data_path_)
-            self.train_token_data_ = self.__encode_prompt(self.__parse_data_with_template(data["train"]), True)
-            self.test_token_data_ = self.__encode_prompt(self.__parse_data_with_template(train_data["train"]), True)
+        self.train_token_data_ = self.__encode_prompt(self.__parse_data_with_template(data), True)
+
 
     # current trained epoch > specified epoch number?
     def is_train_done(self):
@@ -196,14 +187,6 @@ class TrainTask():
             return False
         return True
 
-    # testing text completed? next_test_start_idx < len(test_token_data)?
-    def is_test_done(self):
-        if self.next_test_data_start_idx_ < len(self.test_token_data_):
-            return False
-        return True
-
-    def reset_test_status(self):
-        self.next_test_data_start_idx_ = 0
 
     # reentry function
     def get_train_data_max_seq_len(self) -> int:
@@ -212,7 +195,8 @@ class TrainTask():
         # in this strategy must sort
         return len(self.train_token_data_[start_idx].tokens_)
 
-    # return training data for this iteration
+
+    # return training data for this batch
     # non reentry function
     def get_train_data(self) -> List[TrainData]:
         start_idx = self.next_train_data_start_idx_
@@ -245,8 +229,6 @@ class Dispatcher():
     # the number of max candidate training lora model
     # can chose train data from this dataset
     train_lora_candidate_num_: int = 0
-    # the number of simultaneously train lora model
-    train_lora_simultaneously_num_: int = 0
 
     strategy_: str = ""
 
@@ -259,7 +241,6 @@ class Dispatcher():
         self.done_train_task_ = []
 
         self.train_lora_candidate_num_ = config["train_lora_candidate_num"]
-        self.train_lora_simultaneously_num_ = config["train_lora_simultaneously_num"]
         self.strategy_ = config["train_strategy"]
 
         # create ready task for every lora
@@ -268,54 +249,27 @@ class Dispatcher():
                 TrainTask(tokenizer=self.tokenizer_,
                             adapter_name=lora["name"],
                             data_path=lora["data"],
-                            val_set_size=lora.get("val_set_size", -1),
-                            test_data_path=lora.get("test_data", None),
+                            # val_set_size=lora.get("val_set_size", -1),
+                            # test_data_path=lora.get("test_data", None),
                             prompt_template_path=lora["prompt"],
                             total_epoch_num=lora["num_epochs"],
                             max_train_batch_size=lora["batch_size"],
                             max_train_micro_batch_size=lora["micro_batch_size"],
-                            max_test_batch_size=lora["test_batch_size"],
+                            # max_test_batch_size=lora["test_batch_size"],
                             train_cutoff_len=config["cutoff_len"],
-                            group_by_length=lora.get("group_by_length", True)))
+                            # group_by_length=lora.get("group_by_length", True)
+                ))
 
-    def optim_dispatch_strategy(self) -> Dict[str, List[TrainData]]:
-        task_len = {}
-        for idx, task in enumerate(self.running_train_task_):
-            task_len[idx] = task.get_train_data_max_seq_len()
-        # sort to get the seq most similar data
-        task_len = sorted(task_len.items(), key=lambda x: x[1], reverse=True)
-        # find the mini diff
-        min_need_pad_len = sys.maxsize
-        win_start_idx = 0
-        for sidx in range(0, len(task_len) - self.train_lora_simultaneously_num_ + 1):
-            win = task_len[sidx:sidx + self.train_lora_simultaneously_num_]
-            need_pad_len = 0
-            for i in range(1, len(win)):
-                # aliging to the max seq len
-                need_pad_len += abs(win[i][1] - win[0][1])
-            if need_pad_len < min_need_pad_len:
-                min_need_pad_len = need_pad_len
-                win_start_idx = sidx
-        # the result is win_start_idx
-        result_win = task_len[win_start_idx:win_start_idx + self.train_lora_simultaneously_num_]
-        ret_train_data = {}
-        for result_task_len in result_win:
-            task_idx = result_task_len[0]
-            ret_train_data[self.running_train_task_[task_idx].adapter_name_] = self.running_train_task_[task_idx].get_train_data()
 
-        return ret_train_data
+    # to get tasks from ready_tasks of each lora by turns
+    def my_dispatch_strategy(self) -> Tuple[str, List[TrainData]]:
+        task = random.choice(self.running_train_task_)
+        adapter_name = task.adapter_name_
+        # get_train_data moves forward data idx counter of this task
+        ret_train_data = task.get_train_data()
 
-    # select data for this training step from all available running tasks
-    def none_dispatch_strategy(self) -> Dict[str, List[TrainData]]:
-        ret_train_data = {}
-        cnt = 0
-        for task in self.running_train_task_:
-            assert not task.is_train_done()
-            if cnt >= self.train_lora_simultaneously_num_:
-                break
-            ret_train_data[task.adapter_name_] = task.get_train_data()
-            cnt += 1
-        return ret_train_data
+        return adapter_name, ret_train_data
+
 
     # ready task number == 0 and running task number == 0
     def check_task_done(self) -> bool:
@@ -323,17 +277,14 @@ class Dispatcher():
             return True
         return False
 
-    # check if epoch number is completed
+
+    # check if every lora is done with their training
     def check_test_done(self) -> bool:
         for task in self.running_train_task_:
             if task.is_train_done():
                 return False
         return True
 
-    # set start_idx of testing data to 0
-    def reset_test_task(self):
-        for task in self.running_train_task_:
-            task.reset_test_status()
 
     # ready task -> running task
     def __dispatch_task_in(self):
@@ -348,32 +299,24 @@ class Dispatcher():
             task.load_data()
             self.running_train_task_.append(task)
 
+
     # running task -> done task
     def __dispatch_task_out(self):
         done_task = [task for task in self.running_train_task_ if task.is_train_done()]
         self.running_train_task_ = [task for task in self.running_train_task_ if not task.is_train_done()]
         self.done_train_task_.extend(done_task)
 
-    def get_test_data(self) -> MultiLoraBatchData:
-        pass
 
-    def get_train_data(self) -> MultiLoraBatchData:
+    def get_train_data(self) -> LoraBatchData:
         self.__dispatch_task_in()
 
         # get task train data
-        all_train_data: Dict[str, List[TrainData]] = {}
-        if self.strategy_ == "none":
-            all_train_data = self.none_dispatch_strategy()
-        elif self.strategy_ == "optim":
-            all_train_data = self.optim_dispatch_strategy()
-        else:
-            raise "unknown strategy"
+        adapter, all_train_data: Tuple[str, List[TrainData]] = self.my_dispatch_strategy()
 
         batch_seq_len: int = -1
         # to align batch token data
-        for adapter in all_train_data:
-            for data in all_train_data[adapter]:
-                batch_seq_len = max(batch_seq_len, len(data.tokens_))
+        for data in all_train_data:
+            batch_seq_len = max(batch_seq_len, len(data.tokens_))
 
         # all prompts and tokens / config
         batch_seq_len = math.ceil(batch_seq_len / 8) * 8
@@ -381,40 +324,33 @@ class Dispatcher():
         expand_side: List[str] = []
         batch_tokens: List[Tokens] = []
         tokens_len_without_pad: List[int] = []
-        lora_batch_data_config: List[LoraBatchDataConfig] = []
 
         # batch the all adapter data
-        adapter_start_idx: int = 0
-        for adapter in all_train_data:
-            adapter_end_idx: int = adapter_start_idx + len(all_train_data[adapter])
-            for data in all_train_data[adapter]:
-                prompts.append(data.prompt_)
-                tokens: Tokens = data.tokens_.copy()
-                tokens_len_without_pad.append(len(tokens))
-                # get the pad token from lora config
-                lora_config = None
-                for ilora_conf in self.config_["lora"]:
-                    if ilora_conf["name"] == adapter:
-                        lora_config = ilora_conf
-                pad_side = lora_config.get("expand_side", "right")
-                assert pad_side == "right" or pad_side == "left"
-                # pad the tokens to align
-                while len(tokens) < batch_seq_len:
-                    if pad_side == "right":
-                        tokens.append(self.tokenizer_.pad_id_)
-                    else:
-                        tokens.insert(0, self.tokenizer_.pad_id_)
-                expand_side.append(pad_side)
-                batch_tokens.append(tokens)
-
-            lora_batch_data_config.append(LoraBatchDataConfig(adapter_name_=adapter, batch_start_idx_=adapter_start_idx, batch_end_idx_=adapter_end_idx))
-            adapter_start_idx = adapter_end_idx
+        for data in all_train_data:
+            prompts.append(data.prompt_)
+            tokens: Tokens = data.tokens_.copy()
+            tokens_len_without_pad.append(len(tokens))
+            # get the pad token from lora config
+            lora_config = None
+            for ilora_conf in self.config_["lora"]:
+                if ilora_conf["name"] == adapter:
+                    lora_config = ilora_conf
+            pad_side = lora_config.get("expand_side", "right")
+            assert pad_side == "right" or pad_side == "left"
+            # pad the tokens to align
+            while len(tokens) < batch_seq_len:
+                if pad_side == "right":
+                    tokens.append(self.tokenizer_.pad_id_)
+                else:
+                    tokens.insert(0, self.tokenizer_.pad_id_)
+            expand_side.append(pad_side)
+            batch_tokens.append(tokens)
 
         self.__dispatch_task_out()
 
-        return MultiLoraBatchData(prompts_=prompts,
-                                    lora_batch_data_config_=lora_batch_data_config,
-                                    batch_seq_len_=batch_seq_len,
-                                    expand_side_=expand_side,
-                                    batch_tokens_=batch_tokens,
-                                    tokens_len_without_pad_=tokens_len_without_pad)
+        return LoraBatchData(prompts_=prompts,
+                            adapter_name_=adapter,
+                            batch_seq_len_=batch_seq_len,
+                            expand_side_=expand_side,
+                            batch_tokens_=batch_tokens,
+                            tokens_len_without_pad_=tokens_len_without_pad)

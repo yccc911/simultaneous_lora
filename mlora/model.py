@@ -1,4 +1,4 @@
-from mlora.modelargs import MultiLoraBatchData
+from mlora.modelargs import LoraBatchData
 
 import torch
 import einops
@@ -7,7 +7,8 @@ from abc import ABCMeta, abstractclassmethod
 from typing import Tuple, Dict, List, Optional
 
 
-def precompute_mask(input: MultiLoraBatchData,
+# used in LlamaModel.forward when training
+def precompute_mask(input: LoraBatchData,
                     n_head: int,
                     device: str,
                     dtype: torch.dtype = torch.float32) -> torch.Tensor:
@@ -20,16 +21,15 @@ def precompute_mask(input: MultiLoraBatchData,
         expand_side = input.expand_side_[idx]
 
         if expand_side == "right":
-            mask[idx] += torch.tensor([0] * zero_len + [float("-inf")] * inf_len).expand(
-                input.batch_seq_len_, input.batch_seq_len_).cuda(device)
+            mask[idx] += torch.tensor([0] * zero_len + [float("-inf")] * inf_len).expand(input.batch_seq_len_, input.batch_seq_len_).cuda(device)
         else:
-            mask[idx] += torch.tensor([float("-inf")] * inf_len + [0] * zero_len).expand(
-                input.batch_seq_len_, input.batch_seq_len_).cuda(device)
+            mask[idx] += torch.tensor([float("-inf")] * inf_len + [0] * zero_len).expand(input.batch_seq_len_, input.batch_seq_len_).cuda(device)
 
     mask.requires_grad_(False)
     return mask.to(dtype)
 
 
+# used in LlamaModel to calculate rope angels
 def precompute_rope_angle(dim: int, seq_len: int, device: str, theta: float = 10000.0) -> Tuple[torch.Tensor, torch.Tensor]:
     angles = 1.0 / (theta ** (torch.arange(0, dim, 2).to(device)
                               [: (dim // 2)].to(torch.float) / dim))
@@ -58,6 +58,7 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
             batch_size, seq_len, n_kv_heads * n_rep, head_dim)
 
 
+# used in Transformer.forward to apply rotary emb on xq & xk
 def apply_rotary_emb(xq: torch.Tensor, xk: torch.Tensor, angle: Tuple[torch.Tensor, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
     # data shape is: batch_size * max_seq_len * n_head * n_dim
     _, max_seq_len, _, dim_head = xq.shape
@@ -100,7 +101,7 @@ class RMSNorm(torch.nn.Module):
 
 class LLMModel(metaclass=ABCMeta):
     @abstractclassmethod
-    def forward(self, input: MultiLoraBatchData):
+    def forward(self, input: LoraBatchData):
         pass
 
     @abstractclassmethod
@@ -109,11 +110,11 @@ class LLMModel(metaclass=ABCMeta):
 
     @abstractclassmethod
     def init_lora_weight(self, adapter_name: str,
-                         r: int,
-                         lora_alpha: int,
-                         lora_dropout: float,
-                         target: Dict[str, bool],
-                         weight: Optional[Dict[str, torch.Tensor]]):
+                        r: int,
+                        lora_alpha: int,
+                        lora_dropout: float,
+                        target: Dict[str, bool],
+                        weight: Optional[Dict[str, torch.Tensor]]):
         pass
 
     @abstractclassmethod

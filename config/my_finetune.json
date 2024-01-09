@@ -1,0 +1,70 @@
+{
+    "cutoff_len": 1024,
+    "save_step": 100,
+    "early_stop_test_step": 2000,
+    "train_lora_candidate_num": 4,
+    "general_lora": {
+        "r": 8,
+        "alpha": 16,
+        "batch_size": 16,
+        "micro_batch_size": 4,
+        "num_epochs": 1,
+        "output": "general_lora",
+        "optim": "adamw",
+        "lr": 1e-2,
+        "dropout": 0.05,
+        "target_modules": {
+            "q_proj": true,
+            "k_proj": true,
+            "v_proj": false,
+            "o_proj": false,
+            "w1_proj": false,
+            "w2_proj": false,
+            "w3_proj": false
+        },
+        "expand_side": "right"
+    },
+    "lora": [
+        {
+            "name": "temporal",
+            "output": "temporal_lora",
+            "optim": "sgd",
+            "lr": 1e-2,
+            "momentum": 0.9,
+            "dropout": 0.05,
+            "target_modules": {
+                "q_proj": true,
+                "k_proj": true,
+                "v_proj": false,
+                "o_proj": false,
+                "w1_proj": false,
+                "w2_proj": false,
+                "w3_proj": false
+            },
+            "data": "data/data_demo.json",
+            "test_data": "data/test_data_demo.json",
+            "prompt": "template/template_demo.json",
+            "expand_side": "right"
+        },
+        {
+            "name": "sharegpt",
+            "output": "sharegpt_lora",
+            "optim": "adamw",
+            "lr": 3e-4,
+            "dropout": 0.05,
+            "target_modules": {
+                "q_proj": true,
+                "k_proj": true,
+                "v_proj": false,
+                "o_proj": false,
+                "w1_proj": false,
+                "w2_proj": false,
+                "w3_proj": false
+            },
+            "data": "data/data_demo.json",
+            "test_data": "data/test_data_demo.json",
+            "prompt": "template/template_demo.json",
+            "expand_side": "right"
+        }
+    ]
+}

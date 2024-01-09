@@ -1,4 +1,4 @@
-from mlora.modelargs import LLMModelArgs, MultiLoraBatchData
+from mlora.modelargs import LLMModelArgs, LoraBatchData
 from mlora.checkpoint import CheckpointRecomputeFunction
 from mlora.model import repeat_kv, apply_rotary_emb, precompute_rope_angle, precompute_mask
 from mlora.model import LLMModel, RMSNorm
@@ -101,12 +101,17 @@ class Transformer(torch.nn.Module):
 
                 linear_layer_list[idx].init_lora_weight(adapter_name, r, lora_alpha, lora_dropout, lora_a, lora_b)
 
+
+    # def set_lora_gradient(self, target_lora_name: str):
+        
+
+
     # @torch.compile
     def forward(self,
                 data: torch.Tensor,
                 mask: torch.Tensor,
                 rope_angle: Tuple[torch.Tensor, torch.Tensor],
-                input_args: MultiLoraBatchData):
+                input_args: LoraBatchData):
         batch_size, max_seq_len, _ = data.shape
 
         attention_norm_data = self.attention_norm_.forward(data)
@@ -115,7 +120,7 @@ class Transformer(torch.nn.Module):
         xk = self.wk_.forward(attention_norm_data, input_args)
         xv = self.wv_.forward(attention_norm_data, input_args)
 
-        # conver shape to multi head
+        # convert shape to multi head
         xq = xq.view(batch_size, max_seq_len, self.n_heads_, self.head_dim_)
         xk = xk.view(batch_size, max_seq_len, self.n_kv_heads_, self.head_dim_)
         xv = xv.view(batch_size, max_seq_len, self.n_kv_heads_, self.head_dim_)
@@ -136,7 +141,6 @@ class Transformer(torch.nn.Module):
         data = data + self.wo_.forward(attention_score, input_args)
 
         # feed forward fully connected
-        # (?) forward
         score_norm_data = self.ffn_norm_.forward(data)
         w1 = self.w1_.forward(score_norm_data, input_args)
         w3 = self.w3_.forward(score_norm_data, input_args)
@@ -183,8 +187,7 @@ class LlamaModel(LLMModel):
         self.output_: OutputLayer = None   # vocab size * dim
 
         # cos and sin
-        self.rope_angle_: Tuple[torch.Tensor, torch.Tensor] = precompute_rope_angle(
-            args.dim_ // args.n_heads_, args.max_seq_len_, args.device)
+        self.rope_angle_: Tuple[torch.Tensor, torch.Tensor] = precompute_rope_angle(args.dim_ // args.n_heads_, args.max_seq_len_, args.device)
 
         self.norm_eps_ = args.norm_eps_
 
@@ -197,8 +200,10 @@ class LlamaModel(LLMModel):
         # need to set
         self.eos_token_id_ = -1
 
+        self.general_lora_name = 'general_lora'
+
     # train model or inference model: output is probs
-    def forward(self, input: MultiLoraBatchData) -> torch.Tensor:
+    def forward(self, input: LoraBatchData) -> torch.Tensor:
         tokens = torch.tensor(input.batch_tokens_, dtype=torch.int64).to(self.device_)
 
         # only for train
@@ -225,6 +230,7 @@ class LlamaModel(LLMModel):
         for transformer_layer in self.layers_:
             transformer_layer.init_lora_layer_weight(adapter_name, r, lora_alpha, lora_dropout, target, weight)
 
+    # construct llama of our own by obtaining weight from LlamaForCausalLM.from_pretrained
     def from_pretrained(path: str,
                         device: str,
                         bits: int = None,
@@ -273,7 +279,7 @@ class LlamaModel(LLMModel):
         model = LlamaModel(llama_args)
 
         embedding_weight = llama_model.model.embed_tokens.weight.to(device=device).requires_grad_(False)
-        model.token_embedding_ = Embedding(embedding_weight, llama_args.pad_token_id_)
+        model.token_embedding_ = Embedding(embedding_weight, llama_args.pad_token_id_) # (?) requires_grad_(True)
 
         output_weight = llama_model.lm_head.weight.to(dtype=torch.float32, device=device).requires_grad_(False)
         model.output_ = OutputLayer(output_weight)
@@ -310,12 +316,28 @@ class LlamaModel(LLMModel):
 
                 for lora_layer in lora_layer_list:
                     if adapter_name in lora_layer:
-                        train_paramas[adapter_name].append(
-                            lora_layer[adapter_name].lora_a_)
-                        train_paramas[adapter_name].append(
-                            lora_layer[adapter_name].lora_b_)
+                        train_paramas[adapter_name].append(lora_layer[adapter_name].lora_a_)
+                        train_paramas[adapter_name].append(lora_layer[adapter_name].lora_b_)
 
         return train_paramas
+
+    def get_general_train_paramas(self) -> List[torch.Tensor]:
+        general_train_para = []
+
+        adapter_name = self.general_lora_name
+        for transformer_layer in self.layers_:
+
+            lora_layer_list = [transformer_layer.wq_.loras_, transformer_layer.wk_.loras_,
+                                transformer_layer.wv_.loras_, transformer_layer.wo_.loras_,
+                                transformer_layer.w1_.loras_, transformer_layer.w2_.loras_,
+                                transformer_layer.w3_.loras_]
+
+            for lora_layer in lora_layer_list:
+                if adapter_name in lora_layer:
+                    general_train_para.append(lora_layer[adapter_name].lora_a_)
+                    general_train_para.append(lora_layer[adapter_name].lora_b_)
+
+        return general_train_para
 
     # return the lora weight and target_module's name
     def get_lora_weight_dict(self, lora_name: str) -> Tuple[Dict[str, torch.Tensor], List[str]]:

@@ -8,7 +8,7 @@ import bitsandbytes
 from typing import Dict, Optional
 import logging
 
-FORMAT = '%(asctime)s %(filename)s %(funcName)s:%(message)s'
+FORMAT = '%(asctime)s %(filename)s %(module)s %(funcName)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 class Lora():

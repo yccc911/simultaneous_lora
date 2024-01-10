@@ -73,7 +73,7 @@ if args.config is None:
     parser.print_help()
     exit(-1)
 
-FORMAT = '%(asctime)s %(filename)s %(funcName)s:%(message)s'
+FORMAT = '%(asctime)s %(filename)s %(module)s %(funcName)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 # Functions
@@ -241,6 +241,10 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
             general_optimizer.zero_grad()
 
         if step_cnt[input.adapter_name_] % config["save_step"] == 0:
+            logging.info(f"    step: {step_cnt[input.adapter_name_]} saving model")
+            mlora.save_lora_model(llm_model, config, f"{step_cnt}")
+        if step_cnt['general_lora'] % config["save_step"] == 0:
+            logging.info(f"    step: {step_cnt['general_lora']} saving model")
             mlora.save_lora_model(llm_model, config, f"{step_cnt}")
 
     mlora.save_lora_model(llm_model, config)

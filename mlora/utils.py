@@ -6,7 +6,7 @@ import json
 import torch
 import logging
 
-FORMAT = '%(asctime)s %(filename)s %(funcName)s:%(message)s'
+FORMAT = '%(asctime)s %(filename)s %(module)s %(funcName)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 # convert huggingface model to pytorch model
@@ -16,7 +16,6 @@ def convert_hf_to_pth(source: str, dest: str):
     torch.save(src_model.state_dict(), dest)
 
 
-# TODO sace general lora model
 # save lora model
 def save_lora_model(model: LlamaModel, config: Dict[str, str], dir_suffix=""):
 
@@ -36,7 +35,7 @@ def save_lora_model(model: LlamaModel, config: Dict[str, str], dir_suffix=""):
 
     adapter_config = {}
     adapter_config["lora_alpha"] = general_lora["alpha"]
-    adapter_config["lora_dropout"] = lora_config["dropout"]
+    adapter_config["lora_dropout"] = general_lora["dropout"]
     adapter_config["r"] = general_lora["r"]
     adapter_config["peft_type"] = "LORA"
     adapter_config["task_type"] = "CAUSAL_LM"

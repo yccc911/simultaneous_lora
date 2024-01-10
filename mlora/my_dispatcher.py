@@ -310,8 +310,8 @@ class Dispatcher():
     def get_train_data(self) -> LoraBatchData:
         self.__dispatch_task_in()
 
-        # get task train data
-        adapter, all_train_data: Tuple[str, List[TrainData]] = self.my_dispatch_strategy()
+        # get task train data : Tuple[str, List[TrainData]]
+        adapter, all_train_data = self.my_dispatch_strategy()
 
         batch_seq_len: int = -1
         # to align batch token data

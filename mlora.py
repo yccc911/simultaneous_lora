@@ -73,7 +73,7 @@ if args.config is None:
     parser.print_help()
     exit(-1)
 
-FORMAT = '%(asctime)s %(filename)s %(funcname)s:%(message)s'
+FORMAT = '%(asctime)s %(filename)s %(funcName)s:%(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 # Functions

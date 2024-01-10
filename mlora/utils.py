@@ -6,7 +6,7 @@ import json
 import torch
 import logging
 
-FORMAT = '%(asctime)s %(filename)s %(funcname)s:%(message)s'
+FORMAT = '%(asctime)s %(filename)s %(funcName)s:%(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 # convert huggingface model to pytorch model

@@ -6,7 +6,10 @@ import torch.nn.functional as F
 import bitsandbytes
 
 from typing import Dict, Optional
+import logging
 
+FORMAT = '%(asctime)s %(filename)s %(funcName)s:%(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 class Lora():
     def __init__(self, adapter_name: str):
@@ -87,7 +90,7 @@ class Linear():
                 result += self.loras_[adapter_name].forward(data)
                 self.loras_[adapter_name].lora_a_.requires_grad_(True)
                 self.loras_[adapter_name].lora_b_.requires_grad_(True)
-            else: 
+            else:
                 self.loras_[adapter_name].lora_a_.requires_grad_(False)
                 self.loras_[adapter_name].lora_b_.requires_grad_(False)
 

@@ -136,7 +136,6 @@ def init_lora_model(config: Dict[str, any], llm_model: mlora.LLMModel):
                                     lora_weight)
 
 
-# to get optimizer per lora model
 def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]) -> Dict[str, torch.optim.Optimizer]:
     optimizer: Dict[str, torch.optim.Optimizer] = {}
 
@@ -157,7 +156,6 @@ def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]
     return optimizer
 
 
-# to get optimizer for general lora
 def get_general_optimizer(config: Dict[str, any], general_train_para: torch.Tensor) -> torch.optim.Optimizer:
     general_optimizer: torch.optim.Optimizer = None
 

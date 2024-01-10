@@ -242,6 +242,7 @@ class Dispatcher():
 
         self.train_lora_candidate_num_ = config["train_lora_candidate_num"]
 
+        general_lora = config['general_lora']
         # create ready task for every lora
         for lora in config["lora"]:
             self.ready_train_task_.append(
@@ -251,9 +252,9 @@ class Dispatcher():
                             # val_set_size=lora.get("val_set_size", -1),
                             # test_data_path=lora.get("test_data", None),
                             prompt_template_path=lora["prompt"],
-                            total_epoch_num=lora["num_epochs"],
-                            max_train_batch_size=lora["batch_size"],
-                            max_train_micro_batch_size=lora["micro_batch_size"],
+                            total_epoch_num=general_lora["num_epochs"],
+                            max_train_batch_size=general_lora["batch_size"],
+                            max_train_micro_batch_size=general_lora["micro_batch_size"],
                             # max_test_batch_size=lora["test_batch_size"],
                             train_cutoff_len=config["cutoff_len"],
                             # group_by_length=lora.get("group_by_length", True)

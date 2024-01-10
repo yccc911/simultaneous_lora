@@ -20,8 +20,8 @@ import json
 import torch
 import mlora
 import random
-import datetime
 import argparse
+import logging
 from typing import Dict, Tuple, List
 
 # Command Line Arguments
@@ -54,14 +54,9 @@ parser.add_argument('--log', type=bool, default=True,
 args = parser.parse_args()
 
 
-def log(msg: str):
-    if args.log:
-        print('[%s] m-LoRA: %s' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), msg))
-
-
 if torch.cuda.is_available():
-    log('NVIDIA CUDA initialized successfully.')
-    log('Total %i GPU(s) detected.' % torch.cuda.device_count())
+    logging.info('NVIDIA CUDA initialized successfully.')
+    logging.info('Total %i GPU(s) detected.' % torch.cuda.device_count())
 else:
     print('m-LoRA requires NVIDIA CUDA computing capacity. Please check your PyTorch installation.')
     exit(-1)
@@ -92,7 +87,7 @@ def load_base_model(config: Dict[str, any]) -> Tuple[mlora.Tokenizer, mlora.LLMM
             path=args.base_model,
             device=args.device,
             bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
-            log_fn=log
+            # log_fn=log
         )
     else:
         raise f"unknown model type {args.model_type}"
@@ -115,6 +110,8 @@ def init_lora_model(config: Dict[str, any], llm_model: mlora.LLMModel):
         adapter_file_path = general_lora["output"] + "/adapter_model.bin"
         print(f"load {adapter_file_path}")
         lora_weight = torch.load(adapter_file_path)
+
+    logging.info('Initializing LoRA: general')
     llm_model.init_lora_weight(general_lora['name'],
                             general_lora["r"],
                             general_lora["alpha"],
@@ -128,7 +125,7 @@ def init_lora_model(config: Dict[str, any], llm_model: mlora.LLMModel):
             adapter_file_path = lora_config["output"] + "/adapter_model.bin"
             print(f"load {adapter_file_path}")
             lora_weight = torch.load(adapter_file_path)
-
+        logging.info(f'Initializing LoRA: {lora_config["name"]}')
         llm_model.init_lora_weight(lora_config["name"],
                                     general_lora["r"],
                                     general_lora["alpha"],

@@ -42,7 +42,6 @@ class Linear():
             self.device_ = device
 
         if not isinstance(weight, torch.nn.Linear):
-            import bitsandbytes
             assert isinstance(weight, bitsandbytes.nn.Linear8bitLt) or isinstance(weight, bitsandbytes.nn.Linear4bit), "error type."
         else:
             weight.requires_grad_(False)

@@ -349,8 +349,7 @@ class LlamaModel(LLMModel):
                                 transformer_layer.wv_, transformer_layer.wo_,
                                 transformer_layer.w1_, transformer_layer.w2_,
                                 transformer_layer.w3_]
-            lora_layer_name_list = [
-                "q_proj", "k_proj", "v_proj", "o_proj", "w1_proj", "w2_proj", "w3_proj"]
+            lora_layer_name_list = ["q_proj", "k_proj", "v_proj", "o_proj", "w1_proj", "w2_proj", "w3_proj"]
             for idx, lora_layer in enumerate(lora_layer_list):
                 if lora_name in lora_layer.loras_:
                     if lora_layer_name_list[idx] not in target_modules:

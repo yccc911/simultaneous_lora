@@ -86,9 +86,9 @@ class Linear():
             if adapter_name == "general_lora" or adapter_name == input_args.adapter_name_:
                 result += self.loras_[adapter_name].forward(data)
                 self.loras_[adapter_name].lora_a_.requires_grad_(True)
-                self.loras_[adapter_name].lors_b_.requires_grad_(True)
+                self.loras_[adapter_name].lora_b_.requires_grad_(True)
             else: 
                 self.loras_[adapter_name].lora_a_.requires_grad_(False)
-                self.loras_[adapter_name].lors_b_.requires_grad_(False)
+                self.loras_[adapter_name].lora_b_.requires_grad_(False)
 
         return result

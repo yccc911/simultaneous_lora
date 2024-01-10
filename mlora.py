@@ -214,24 +214,27 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()
 
+        logging.info("LLMModel forwarding...")
         output = llm_model.forward(input)
         labels = torch.tensor(input.batch_tokens_, dtype=torch.long).to(args.device)
 
-        # !!!!
         loss_input = output[..., :-1, :].contiguous().view(-1, llm_model.vocab_size_)
         loss_target = labels[..., 1:].contiguous().view(-1)
         loss = loss_fn(loss_input, loss_target)
-        logging.info(f"    adapter: {input.adapter_name_} loss: {loss}")
+        logging.info(f"    step: {step_cnt[input.adapter_name_]} adapter: {input.adapter_name_} loss: {loss}")
         loss /= accumulation_step
 
         step_cnt['general_lora'] += 1
+        step_cnt[input.adapter_name_] += 1
 
+        logging.info("loss.backward: calculating gradients")
         loss.backward()
-        # TODO to update the independent lora and general lora separately
         if step_cnt[input.adapter_name_] % accumulation_step == 0:
+            logging.info(f"Adapter-{input.adapter_name_} updates")
             all_optimizer[input.adapter_name_].step()
             all_optimizer[input.adapter_name_].zero_grad()
         if step_cnt['general_lora'] % accumulation_step == 0:
+            logging.info(f"Adapter-general updates")
             general_optimizer.step()
             general_optimizer.zero_grad()
 

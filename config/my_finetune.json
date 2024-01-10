@@ -30,6 +30,7 @@
             "name": "temporal",
             "output": "temporal_lora",
             "optim": "sgd",
+            "num_epochs":1,
             "lr": 1e-2,
             "momentum": 0.9,
             "dropout": 0.05,
@@ -51,6 +52,7 @@
             "name": "sharegpt",
             "output": "sharegpt_lora",
             "optim": "adamw",
+            "num_epochs":1,
             "lr": 3e-4,
             "dropout": 0.05,
             "target_modules": {

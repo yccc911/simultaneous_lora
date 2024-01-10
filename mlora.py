@@ -81,7 +81,8 @@ def setup_seed(seed):
     random.seed(seed)
 
 
-def load_base_model(config: Dict[str, any]) -> Tuple[mlora.Tokenizer, mlora.LLMModel]:
+def load_base_model() -> Tuple[mlora.Tokenizer, mlora.LLMModel]:
+    logging.info("Initializing llama base model")
     if args.model_type == "llama":
         model = mlora.LlamaModel.from_pretrained(
             path=args.base_model,
@@ -92,6 +93,7 @@ def load_base_model(config: Dict[str, any]) -> Tuple[mlora.Tokenizer, mlora.LLMM
     else:
         raise f"unknown model type {args.model_type}"
 
+    logging.info("Initializing tokenizer")
     tokenizer = mlora.Tokenizer(args.base_model)
 
     model.pad_token_id_ = tokenizer.pad_id_
@@ -304,7 +306,7 @@ if __name__ == "__main__":
     with open(args.config, 'r', encoding='utf8') as fp:
         config = json.load(fp)
 
-    tokenizer, model = load_base_model(config)
+    tokenizer, model = load_base_model()
     init_lora_model(config, model)
 
     torch.cuda.empty_cache()

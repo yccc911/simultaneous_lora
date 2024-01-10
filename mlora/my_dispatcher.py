@@ -8,7 +8,10 @@ import random
 import datasets
 from dataclasses import dataclass
 from typing import Dict, List, Union, Tuple
+import logging
 
+FORMAT = '%(asctime)s %(filename)s %(module)s %(funcName)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 Tokens = List[int]
 
@@ -309,6 +312,7 @@ class Dispatcher():
 
     def get_train_data(self) -> LoraBatchData:
         self.__dispatch_task_in()
+        print(f"ready_train_task_: {len(self.ready_train_task_)} running_train_task_: {len(self.running_train_task_)}")
 
         # get task train data : Tuple[str, List[TrainData]]
         adapter, all_train_data = self.my_dispatch_strategy()

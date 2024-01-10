@@ -4,6 +4,7 @@
     "early_stop_test_step": 2000,
     "train_lora_candidate_num": 4,
     "general_lora": {
+        "name": "general_lora",
         "output": "general_lora",
         "r": 8,
         "alpha": 16,

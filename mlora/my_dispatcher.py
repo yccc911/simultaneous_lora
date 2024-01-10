@@ -241,7 +241,6 @@ class Dispatcher():
         self.done_train_task_ = []
 
         self.train_lora_candidate_num_ = config["train_lora_candidate_num"]
-        self.strategy_ = config["train_strategy"]
 
         # create ready task for every lora
         for lora in config["lora"]:

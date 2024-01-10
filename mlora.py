@@ -112,7 +112,7 @@ def init_lora_model(config: Dict[str, any], llm_model: mlora.LLMModel):
         lora_weight = torch.load(adapter_file_path)
 
     logging.info('Initializing LoRA: general')
-    llm_model.init_lora_weight(general_lora['name'],
+    llm_model.init_lora_weight(general_lora["name"],
                             general_lora["r"],
                             general_lora["alpha"],
                             general_lora["dropout"],
@@ -191,11 +191,13 @@ def get_accumulation_steps(config: Dict[str, any]) -> int:
 
 # to get test result and want early stop it
 def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.Dispatcher):
-    # the train paramas per lora model
+    logging.info("Getting training parameters for every independent lora model")
     all_train_paramas: Dict[str, List[torch.Tensor]] = llm_model.get_train_paramas(config)
-    # the train para of the general lora model
-    general_train_para: torch.Tensor = llm_model.get_general_train_paramas()
+    logging.info("Getting optimizers for every independent lora model")
     all_optimizer: Dict[str, torch.optim.Optimizer] = get_optimizer(config, all_train_paramas)
+    logging.info("Getting training parameters for general lora model")
+    general_train_para: torch.Tensor = llm_model.get_general_train_paramas()
+    logging.info("Getting optimizers for general lora model")
     general_optimizer: torch.optim.Optimizer = get_general_optimizer(config, general_train_para)
 
     accumulation_step: int = get_accumulation_steps(config)
@@ -208,7 +210,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     for lora in config['lora']:
         step_cnt[lora['name']] = 0
 
-    # start training
+    logging.info("Start training!")
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()
 
@@ -218,8 +220,9 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         # !!!!
         loss_input = output[..., :-1, :].contiguous().view(-1, llm_model.vocab_size_)
         loss_target = labels[..., 1:].contiguous().view(-1)
-        loss = loss_fn(loss_input, loss_target) / accumulation_step[input.adapter_name_]
-        print(f"    adapter: {input.adapter_name_} loss: {loss}")
+        loss = loss_fn(loss_input, loss_target)
+        logging.info(f"    adapter: {input.adapter_name_} loss: {loss}")
+        loss /= accumulation_step
 
         step_cnt['general_lora'] += 1
 

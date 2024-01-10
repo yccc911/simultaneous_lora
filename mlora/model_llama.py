@@ -229,7 +229,7 @@ class LlamaModel(LLMModel):
                             lora_dropout: float,
                             target: Dict[str, bool],
                             weight: Optional[Dict[str, torch.Tensor]]):
-        for idx, transformer_layer in emunerate(self.layers_):
+        for idx, transformer_layer in enumerate(self.layers_):
             logging.info(f"Initializing lora layer-{idx}")
             transformer_layer.init_lora_layer_weight(adapter_name, r, lora_alpha, lora_dropout, target, weight)
 

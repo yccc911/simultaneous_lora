@@ -197,6 +197,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     all_train_paramas: Dict[str, List[torch.Tensor]] = llm_model.get_train_paramas(config)
     logging.info("Getting optimizers for every independent lora model")
     all_optimizer: Dict[str, torch.optim.Optimizer] = get_optimizer(config, all_train_paramas)
+
     logging.info("Getting training parameters for general lora model")
     general_train_para: torch.Tensor = llm_model.get_general_train_paramas()
     logging.info("Getting optimizers for general lora model")
@@ -223,7 +224,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         loss_input = output[..., :-1, :].contiguous().view(-1, llm_model.vocab_size_)
         loss_target = labels[..., 1:].contiguous().view(-1)
         loss = loss_fn(loss_input, loss_target)
-        logging.info(f"    step: {step_cnt[input.adapter_name_]} adapter: {input.adapter_name_} loss: {loss}")
+        logging.info(f"step: {step_cnt[input.adapter_name_]} adapter: {input.adapter_name_} loss: {loss}")
         loss /= accumulation_step
 
         step_cnt['general_lora'] += 1
@@ -244,22 +245,19 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
             logging.info(f"    step: {step_cnt[input.adapter_name_]} saving model")
             mlora.save_lora_model(llm_model, config, f"{step_cnt}")
         if step_cnt['general_lora'] % config["save_step"] == 0:
-            logging.info(f"    step: {step_cnt['general_lora']} saving model")
+            logging.info(f"step: {step_cnt['general_lora']} saving model")
             mlora.save_lora_model(llm_model, config, f"{step_cnt}")
 
     mlora.save_lora_model(llm_model, config)
 
 
-# def inference(config: Dict[str, any],
-#                 llm_model: mlora.LLMModel,
-#                 tokenizer: mlora.Tokenizer):
+# def inference(config: Dict[str, any], llm_model: mlora.LLMModel, tokenizer: mlora.Tokenizer):
 #     lora_adapter_num = len(config["lora"])
 #     batch_data_config: List[mlora.LoraBatchDataConfig] = []
 
 #     for idx, lora_config in enumerate(config["lora"]):
 #         adapter_name = lora_config["name"]
-#         batch_data_config.append(mlora.LoraBatchDataConfig(
-#             adapter_name, idx, idx + 1))
+#         batch_data_config.append(mlora.LoraBatchDataConfig(adapter_name, idx, idx + 1))
 
 #     inference_max_len = 128
 

@@ -42,7 +42,7 @@
                 "w2_proj": false,
                 "w3_proj": false
             },
-            "data": "data/data_demo.json",
+            "data": "data/dummy_data.json",
             "test_data": "data/test_data_demo.json",
             "prompt": "template/template_demo.json",
             "expand_side": "right"
@@ -62,7 +62,7 @@
                 "w2_proj": false,
                 "w3_proj": false
             },
-            "data": "data/data_demo.json",
+            "data": "data/dummy_data.json",
             "test_data": "data/test_data_demo.json",
             "prompt": "template/template_demo.json",
             "expand_side": "right"

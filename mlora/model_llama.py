@@ -12,6 +12,10 @@ import xformers.ops.fmha.attn_bias
 from transformers import LlamaForCausalLM
 from typing import List, Dict, Tuple, Optional
 from collections import OrderedDict
+import logging
+
+FORMAT = '%(asctime)s %(filename)s %(module)s %(funcName)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 
 class Embedding(torch.nn.Module):
@@ -100,10 +104,6 @@ class Transformer(torch.nn.Module):
                     lora_b = weight[lora_b_name]
 
                 linear_layer_list[idx].init_lora_weight(adapter_name, r, lora_alpha, lora_dropout, lora_a, lora_b)
-
-
-    # def set_lora_gradient(self, target_lora_name: str):
-        
 
 
     # @torch.compile
@@ -209,6 +209,7 @@ class LlamaModel(LLMModel):
         # only for train
         mask = precompute_mask(input, self.n_heads_, self.device_)
 
+        logging.info("Packing sequential module")
         seq_module = self.sequential_module()
 
         if input.inference_model_:
@@ -216,6 +217,7 @@ class LlamaModel(LLMModel):
         else:
             data = (tokens, mask, self.rope_angle_, input, True)
 
+        logging.info("Sequential module forwarding")
         for seq_layer in seq_module:
             data = seq_layer.forward(data)
 
@@ -278,16 +280,20 @@ class LlamaModel(LLMModel):
 
         model = LlamaModel(llama_args)
 
+        logging.info(f"Initializing embedding layer")
         embedding_weight = llama_model.model.embed_tokens.weight.to(device=device).requires_grad_(False)
         model.token_embedding_ = Embedding(embedding_weight, llama_args.pad_token_id_) # (?) requires_grad_(True)
 
+        logging.info(f"Initializing output layer")
         output_weight = llama_model.lm_head.weight.to(dtype=torch.float32, device=device).requires_grad_(False)
         model.output_ = OutputLayer(output_weight)
 
+        logging.info(f"Initializing normalization layer")
         norm_weight = llama_model.model.norm.weight.to(device=device).requires_grad_(False)
         model.norm_ = RMSNormLayer(norm_weight, model.norm_eps_)
 
         for idx, layer in enumerate(llama_model.model.layers):
+            logging.info(f"Initializing hidden layer-{idx}")
             model.layers_[idx].wq_ = Linear(layer.self_attn.q_proj, device=device)
             model.layers_[idx].wk_ = Linear(layer.self_attn.k_proj, device=device)
             model.layers_[idx].wv_ = Linear(layer.self_attn.v_proj, device=device)

@@ -268,7 +268,7 @@ class Dispatcher():
         # get_train_data moves forward data idx counter of this task
         ret_train_data = task.get_train_data()
 
-        return adapter_name, ret_train_data
+        return Tuple(adapter_name, ret_train_data)
 
 
     # ready task number == 0 and running task number == 0

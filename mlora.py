@@ -135,6 +135,7 @@ def init_lora_model(config: Dict[str, any], llm_model: mlora.LLMModel):
                                     lora_config["dropout"],
                                     lora_config["target_modules"],
                                     lora_weight)
+    logging.info(f"Initialized lora: {llm_model.layers_[-1].wq_.loras_.keys()}")
 
 
 def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]) -> Dict[str, torch.optim.Optimizer]:
@@ -194,10 +195,9 @@ def get_accumulation_steps(config: Dict[str, any]) -> int:
 def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.Dispatcher):
     logging.info("Getting training parameters for every independent lora model")
     all_train_paramas: Dict[str, List[torch.Tensor]] = llm_model.get_train_paramas(config)
-    logging.info(f"indipendent loras: {all_train_paramas[-1].wq_.loras_.keys()}")
-
     logging.info("Getting optimizers for every independent lora model")
     all_optimizer: Dict[str, torch.optim.Optimizer] = get_optimizer(config, all_train_paramas)
+
 
     logging.info("Getting training parameters for general lora model")
     general_train_para: torch.Tensor = llm_model.get_general_train_paramas()

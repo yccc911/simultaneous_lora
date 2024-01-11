@@ -230,7 +230,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         step_cnt['general_lora'] += 1
         step_cnt[input.adapter_name_] += 1
 
-        logging.info("loss.backward: calculating gradients")
+        # logging.info("loss.backward: calculating gradients")
         loss.backward()
         if step_cnt[input.adapter_name_] % accumulation_step == 0:
             logging.info(f"Adapter-{input.adapter_name_} updates")

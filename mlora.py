@@ -196,7 +196,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     all_train_paramas: Dict[str, List[torch.Tensor]] = llm_model.get_train_paramas(config)
     for lora_config in config["lora"]:
         for target_m in lora_config['target_module']:
-            logging.info(f"{[lora_config['name']}-{target_m}:{all_train_paramas[lora_config['name']]}")
+            logging.info(f"{lora_config['name']}-{target_m}:{all_train_paramas[lora_config['name']]}")
         logging.info(f"indipendent loras: {all_train_paramas[-1].loras_.keys()}")
 
     logging.info("Getting optimizers for every independent lora model")

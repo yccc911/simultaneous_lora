@@ -193,15 +193,14 @@ def get_accumulation_steps(config: Dict[str, any]) -> int:
 
 # to get test result and want early stop it
 def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.Dispatcher):
-    logging.info("Getting training parameters for every independent lora model")
+    logging.debug("Getting training parameters for every independent lora model")
     all_train_paramas: Dict[str, List[torch.Tensor]] = llm_model.get_train_paramas(config)
-    logging.info("Getting optimizers for every independent lora model")
+    logging.debug("Getting optimizers for every independent lora model")
     all_optimizer: Dict[str, torch.optim.Optimizer] = get_optimizer(config, all_train_paramas)
 
-
-    logging.info("Getting training parameters for general lora model")
+    logging.debug("Getting training parameters for general lora model")
     general_train_para: torch.Tensor = llm_model.get_general_train_paramas()
-    logging.info("Getting optimizers for general lora model")
+    logging.debug("Getting optimizers for general lora model")
     general_optimizer: torch.optim.Optimizer = get_general_optimizer(config, general_train_para)
 
     accumulation_step: int = get_accumulation_steps(config)
@@ -209,16 +208,16 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     loss_fn = torch.nn.CrossEntropyLoss()
 
     step_cnt = {
-        "general_lora": 1
+        "general_lora": 0
     }
     for lora in config['lora']:
-        step_cnt[lora['name']] = 1
+        step_cnt[lora['name']] = 0
 
     logging.info("Start training!")
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()
 
-        logging.info("LLMModel forwarding...")
+        logging.debug("LLMModel forwarding...")
         output = llm_model.forward(input)
         labels = torch.tensor(input.batch_tokens_, dtype=torch.long).to(args.device)
 

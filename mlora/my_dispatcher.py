@@ -179,10 +179,10 @@ class TrainTask():
 
     # initialize & load training data according to config
     def load_data(self):
+        logging.info(f"Loadinf training data: {self.adapter_name_}")
         self.__load_template_data()
         data = load_dataset(self.data_path_)
         self.train_token_data_ = self.__encode_prompt(self.__parse_data_with_template(data['train']), True)
-        logging.info(f"Loadinf training data: {self.adapter_name_}")
 
     # current trained epoch > specified epoch number?
     def is_train_done(self):
@@ -207,10 +207,7 @@ class TrainTask():
 
         ret_data = self.train_token_data_[start_idx:end_idx]
 
-        print(f"{self.adapter_name_} train data:")
-        print(
-            f"    epoch: {self.epoch_cnt_}/{self.total_epoch_num_} \
-            step in epoch: {start_idx}/{len(self.train_token_data_)}")
+        logging.info(f"{self.adapter_name_} step in epoch {self.epoch_cnt_}/{self.total_epoch_num_}: {start_idx}/{len(self.train_token_data_)}")
 
         self.next_train_data_start_idx_ += self.max_train_micro_batch_size_
         if self.next_train_data_start_idx_ >= len(self.train_token_data_):
@@ -312,7 +309,6 @@ class Dispatcher():
 
     def get_train_data(self) -> LoraBatchData:
         self.__dispatch_task_in()
-        print(f"ready_train_task_: {len(self.ready_train_task_)} running_train_task_: {len(self.running_train_task_)}")
 
         # get task train data : Tuple[str, List[TrainData]]
         adapter, all_train_data = self.my_dispatch_strategy()

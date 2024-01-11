@@ -84,7 +84,6 @@ def setup_seed(seed):
 
 
 def load_base_model() -> Tuple[mlora.Tokenizer, mlora.LLMModel]:
-    logging.info("Initializing llama base model")
     if args.model_type == "llama":
         model = mlora.LlamaModel.from_pretrained(
             path=args.base_model,
@@ -93,7 +92,7 @@ def load_base_model() -> Tuple[mlora.Tokenizer, mlora.LLMModel]:
             # log_fn=log
         )
     else:
-        raise f"unknown model type {args.model_type}"
+        raise ValueError(f"unknown model type {args.model_type}")
 
     logging.info("Initializing tokenizer")
     tokenizer = mlora.Tokenizer(args.base_model)
@@ -153,7 +152,7 @@ def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]
         elif optim_name == "adamw":
             optimizer[adapter_name] = (torch.optim.AdamW(train_paramas[adapter_name], lr=lr))
         else:
-            raise f"unknown optimizer {optim_name}"
+            raise ValueError(f"unknown optimizer {optim_name}")
 
     return optimizer
 
@@ -173,7 +172,7 @@ def get_general_optimizer(config: Dict[str, any], general_train_para: torch.Tens
     elif optim_name == "adamw":
         general_optimizer = (torch.optim.AdamW(general_train_para, lr=lr))
     else:
-        raise f"unknown optimizer {optim_name}"
+        raise ValueError(f"unknown optimizer {optim_name}")
 
     return general_optimizer
 
@@ -185,7 +184,7 @@ def get_accumulation_steps(config: Dict[str, any]) -> int:
     micro_batch_size = general_lora["micro_batch_size"]
 
     if batch_size < micro_batch_size or batch_size % micro_batch_size != 0:
-        raise f"error batch_size {batch_size} and micro batch size {micro_batch_size}"
+        raise ValueError(f"error batch_size {batch_size} and micro batch size {micro_batch_size}")
 
     ret_accumulation_step = batch_size / micro_batch_size
     return ret_accumulation_step
@@ -195,6 +194,11 @@ def get_accumulation_steps(config: Dict[str, any]) -> int:
 def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.Dispatcher):
     logging.info("Getting training parameters for every independent lora model")
     all_train_paramas: Dict[str, List[torch.Tensor]] = llm_model.get_train_paramas(config)
+    for lora_config in config["lora"]:
+        for target_m in lora_config['target_module']:
+            logging.info(f"{[lora_config['name']}-{target_m}:{all_train_paramas[lora_config['name']]}")
+        logging.info(f"indipendent loras: {all_train_paramas[-1].loras_.keys()}")
+
     logging.info("Getting optimizers for every independent lora model")
     all_optimizer: Dict[str, torch.optim.Optimizer] = get_optimizer(config, all_train_paramas)
 
@@ -208,10 +212,10 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     loss_fn = torch.nn.CrossEntropyLoss()
 
     step_cnt = {
-        "general_lora": 0
+        "general_lora": 1
     }
     for lora in config['lora']:
-        step_cnt[lora['name']] = 0
+        step_cnt[lora['name']] = 1
 
     logging.info("Start training!")
     while not dispatcher.check_task_done():
@@ -233,11 +237,11 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         # logging.info("loss.backward: calculating gradients")
         loss.backward()
         if step_cnt[input.adapter_name_] % accumulation_step == 0:
-            logging.info(f"Adapter-{input.adapter_name_} updates")
+            logging.info(f"Adapter-{input.adapter_name_} gradient updates")
             all_optimizer[input.adapter_name_].step()
             all_optimizer[input.adapter_name_].zero_grad()
         if step_cnt['general_lora'] % accumulation_step == 0:
-            logging.info(f"Adapter-general updates")
+            logging.info(f"Adapter-general gradient updates")
             general_optimizer.step()
             general_optimizer.zero_grad()
 

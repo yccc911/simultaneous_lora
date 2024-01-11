@@ -209,7 +209,7 @@ class LlamaModel(LLMModel):
         # only for train
         mask = precompute_mask(input, self.n_heads_, self.device_)
 
-        logging.info("Packing sequential module")
+        logging.debug("Packing sequential module")
         seq_module = self.sequential_module()
 
         if input.inference_model_:
@@ -217,7 +217,7 @@ class LlamaModel(LLMModel):
         else:
             data = (tokens, mask, self.rope_angle_, input, True)
 
-        logging.info("Sequential module forwarding")
+        logging.debug("Sequential module forwarding")
         for seq_layer in seq_module:
             data = seq_layer.forward(data)
 
@@ -242,6 +242,7 @@ class LlamaModel(LLMModel):
                         double_quant: bool = True,
                         quant_type: str = 'nf4',
                         log_fn=None) -> LLMModel:
+        logging.info("Initializing llama base model")
         if bits in [4, 8]:
             if log_fn is not None:
                 log_fn('Loading model with quantization, bits = %i' % bits)

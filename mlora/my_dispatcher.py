@@ -167,7 +167,7 @@ class TrainTask():
 
             ret.append(TrainData(prompt_=text, tokens_=tokens))
             if idx % 10000 == 0:
-                print(f"encode text data {self.adapter_name_}: {idx}/{len(lora_text_data)}")
+                logging.info(f"Encode text data {self.adapter_name_}: {idx}/{len(lora_text_data)}")
 
         # if is_train_data and self.group_by_length_:
         #     ret.sort(key=lambda x: len(x.tokens_), reverse=True)
@@ -181,8 +181,8 @@ class TrainTask():
     def load_data(self):
         self.__load_template_data()
         data = load_dataset(self.data_path_)
-        self.train_token_data_ = self.__encode_prompt(self.__parse_data_with_template(data), True)
-
+        self.train_token_data_ = self.__encode_prompt(self.__parse_data_with_template(data['train']), True)
+        logging.info(f"Loadinf training data: {self.adapter_name_}")
 
     # current trained epoch > specified epoch number?
     def is_train_done(self):

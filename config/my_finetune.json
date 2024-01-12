@@ -30,9 +30,8 @@
         {
             "name": "temporal",
             "output": "temporal_lora",
-            "optim": "sgd",
+            "optim": "adamw",
             "lr": 1e-2,
-            "momentum": 0.9,
             "dropout": 0.05,
             "target_modules": {
                 "q_proj": true,

@@ -181,7 +181,7 @@ class TrainTask():
 
     # initialize & load training data according to config
     def load_data(self):
-        logging.info(f"Loadinf training data: {self.adapter_name_}")
+        logging.info(f"Loading training data: {self.adapter_name_}")
         self.__load_template_data()
         data = load_dataset(self.data_path_)
         self.train_token_data_ = self.__encode_prompt(self.__parse_data_with_template(data['train']), True)

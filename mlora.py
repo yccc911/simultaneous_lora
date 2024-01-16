@@ -23,6 +23,7 @@ import random
 import argparse
 import logging
 from typing import Dict, Tuple, List
+from tqdm.auto import tqdm
 
 # Command Line Arguments
 parser = argparse.ArgumentParser(description='m-LoRA main program')
@@ -213,6 +214,8 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     for lora in config['lora']:
         step_cnt[lora['name']] = 0
 
+    progress = tqdm(total=dispatcher.get_total_train_data())
+
     logging.info("Start training!")
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()
@@ -247,6 +250,8 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         if step_cnt['general_lora'] % config["save_step"] == 0:
             logging.info(f"step: {step_cnt['general_lora']} saving model")
             mlora.save_lora_model(llm_model, config, f"{step_cnt}")
+
+        progress.update(1)
 
     mlora.save_lora_model(llm_model, config)
 

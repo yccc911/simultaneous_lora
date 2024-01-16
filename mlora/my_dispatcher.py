@@ -168,7 +168,7 @@ class TrainTask():
             ret.append(TrainData(prompt_=text, tokens_=tokens))
             if idx % 10000 == 0:
                 logging.info(f"Encode text data {self.adapter_name_}: {idx}/{len(lora_text_data)}")
-            if idx == len(lora_text_data):
+            if idx == len(lora_text_data)-1:
                 logging.info(f"Encode text data {self.adapter_name_}: {idx}/{len(lora_text_data)}")
 
         # if is_train_data and self.group_by_length_:
@@ -357,3 +357,11 @@ class Dispatcher():
                             expand_side_=expand_side,
                             batch_tokens_=batch_tokens,
                             tokens_len_without_pad_=tokens_len_without_pad)
+
+    def get_total_train_data(self):
+        cnt = 0
+        for task in self.ready_train_task_:
+            with open(task.data_path_) as f:
+                dataset = json.load(f)
+            cnt += len(dataset)
+        return cnt

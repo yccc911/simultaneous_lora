@@ -227,8 +227,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         loss_target = labels[..., 1:].contiguous().view(-1)
         loss = loss_fn(loss_input, loss_target)
         # logging.info(f"step: {step_cnt[input.adapter_name_]} adapter: {input.adapter_name_} loss: {loss}")
-        # TODO !!!!!!!!!!!
-        progress.set_postfix({"adapter": input.adapter_name_, "step": step_cnt[input.adapter_name_], "loss": loss})
+        progress.set_postfix({"adapter": input.adapter_name_, "step": step_cnt[input.adapter_name_], "loss": loss.item()})
         progress.update(1)
         loss /= accumulation_step
 

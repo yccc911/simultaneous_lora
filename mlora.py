@@ -214,7 +214,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     for lora in config['lora']:
         step_cnt[lora['name']] = 0
 
-    progress = tqdm(total=dispatcher.get_total_train_data_len()/accumulation_step)
+    progress = tqdm(total=int(dispatcher.get_total_train_data_len()/accumulation_step), desc="Training...")
     logging.info("Start training!")
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()
@@ -226,7 +226,10 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         loss_input = output[..., :-1, :].contiguous().view(-1, llm_model.vocab_size_)
         loss_target = labels[..., 1:].contiguous().view(-1)
         loss = loss_fn(loss_input, loss_target)
-        logging.info(f"step: {step_cnt[input.adapter_name_]} adapter: {input.adapter_name_} loss: {loss}")
+        # logging.info(f"step: {step_cnt[input.adapter_name_]} adapter: {input.adapter_name_} loss: {loss}")
+        # TODO !!!!!!!!!!!
+        progress.set_postfix({"adapter": input.adapter_name_, "step": step_cnt[input.adapter_name_], "loss": loss})
+        progress.update(1)
         loss /= accumulation_step
 
         step_cnt['general_lora'] += 1
@@ -235,22 +238,22 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         # logging.info("loss.backward: calculating gradients")
         loss.backward()
         if step_cnt[input.adapter_name_] % accumulation_step == 0:
-            logging.info(f"Adapter-{input.adapter_name_} gradient updates")
+            logging.debug(f"Adapter-{input.adapter_name_} gradient updates")
             all_optimizer[input.adapter_name_].step()
             all_optimizer[input.adapter_name_].zero_grad()
         if step_cnt['general_lora'] % accumulation_step == 0:
-            logging.info(f"Adapter-general gradient updates")
+            logging.debug(f"Adapter-general gradient updates")
             general_optimizer.step()
             general_optimizer.zero_grad()
 
         if step_cnt[input.adapter_name_] % config["save_step"] == 0:
-            logging.info(f"    step: {step_cnt[input.adapter_name_]} saving model")
+            logging.info(f"step: {step_cnt[input.adapter_name_]} saving model")
             mlora.save_lora_model(llm_model, config, f"{step_cnt}")
         if step_cnt['general_lora'] % config["save_step"] == 0:
             logging.info(f"step: {step_cnt['general_lora']} saving model")
             mlora.save_lora_model(llm_model, config, f"{step_cnt}")
 
-        progress.update(1)
+    progress.close()
 
     mlora.save_lora_model(llm_model, config)
 

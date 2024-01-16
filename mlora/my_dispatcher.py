@@ -169,7 +169,7 @@ class TrainTask():
             if idx % 10000 == 0:
                 logging.info(f"Encode text data {self.adapter_name_}: {idx}/{len(lora_text_data)}")
             if idx == len(lora_text_data)-1:
-                logging.info(f"Encode text data {self.adapter_name_}: {idx}/{len(lora_text_data)}")
+                logging.info(f"Encode text data {self.adapter_name_}: {len(lora_text_data)}/{len(lora_text_data)}")
 
         # if is_train_data and self.group_by_length_:
         #     ret.sort(key=lambda x: len(x.tokens_), reverse=True)

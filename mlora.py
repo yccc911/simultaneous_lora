@@ -214,8 +214,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     for lora in config['lora']:
         step_cnt[lora['name']] = 0
 
-    progress = tqdm(total=dispatcher.get_total_train_data())
-
+    progress = tqdm(total=dispatcher.get_total_train_data_len())
     logging.info("Start training!")
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()

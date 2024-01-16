@@ -266,8 +266,13 @@ class Dispatcher():
 
     # to get tasks from ready_tasks of each lora by turns
     def my_dispatch_strategy(self) -> Tuple[str, List[TrainData]]:
-        task = random.choice(self.running_train_task_)
-        adapter_name = task.adapter_name_
+
+        min = 999999999
+        for task in self.running_train_task_:
+            if min < task.next_train_data_start_idx_:
+                min = task.next_train_data_start_idx_
+                adapter_name = task.adapter_name_
+
         # get_train_data moves forward data idx counter of this task
         ret_train_data = task.get_train_data()
 
@@ -358,7 +363,7 @@ class Dispatcher():
                             batch_tokens_=batch_tokens,
                             tokens_len_without_pad_=tokens_len_without_pad)
 
-    def get_total_train_data(self):
+    def get_total_train_data_len(self):
         cnt = 0
         for task in self.ready_train_task_:
             with open(task.data_path_) as f:

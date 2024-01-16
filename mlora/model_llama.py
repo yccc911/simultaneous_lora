@@ -294,8 +294,8 @@ class LlamaModel(LLMModel):
         norm_weight = llama_model.model.norm.weight.to(device=device).requires_grad_(False)
         model.norm_ = RMSNormLayer(norm_weight, model.norm_eps_)
 
+        logging.info(f"Initialized {llama_args.n_layers_} hidden layers")
         for idx, layer in enumerate(llama_model.model.layers):
-            logging.info(f"Initializing hidden layer-{idx}")
             model.layers_[idx].wq_ = Linear(layer.self_attn.q_proj, device=device)
             model.layers_[idx].wk_ = Linear(layer.self_attn.k_proj, device=device)
             model.layers_[idx].wv_ = Linear(layer.self_attn.v_proj, device=device)

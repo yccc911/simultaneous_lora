@@ -267,9 +267,9 @@ class Dispatcher():
     # to get tasks from ready_tasks of each lora by turns
     def my_dispatch_strategy(self) -> Tuple[str, List[TrainData]]:
 
-        min = 999999999
+        min = 999999999999
         for task in self.running_train_task_:
-            if min < task.next_train_data_start_idx_:
+            if task.next_train_data_start_idx_ < min:
                 min = task.next_train_data_start_idx_
                 adapter_name = task.adapter_name_
 

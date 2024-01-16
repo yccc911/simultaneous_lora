@@ -235,6 +235,7 @@ class Dispatcher():
     strategy_: str = ""
 
     def __init__(self, config: Dict[str, any], tokenizer: Tokenizer) -> None:
+        logging.info("Initializing dispatcher")
         self.tokenizer_ = tokenizer
         self.config_ = config
 
@@ -293,7 +294,7 @@ class Dispatcher():
         assert len(self.running_train_task_) <= self.train_lora_candidate_num_
         if len(self.running_train_task_) == self.train_lora_candidate_num_:
             return
-        # chose task into running
+        # choose task into running
         while len(self.running_train_task_) < self.train_lora_candidate_num_ and len(self.ready_train_task_) > 0:
             # TODO to dispatch task
             task = self.ready_train_task_.pop(0)

@@ -251,17 +251,13 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     mlora.save_lora_model(llm_model, config)
 
 
-# def inference(config: Dict[str, any], llm_model: mlora.LLMModel, tokenizer: mlora.Tokenizer):
-#     lora_adapter_num = len(config["lora"])
-#     batch_data_config: List[mlora.LoraBatchDataConfig] = []
+# def inference(lora_config: Dict[str, any], llm_model: mlora.LLMModel, tokenizer: mlora.Tokenizer):
 
-#     for idx, lora_config in enumerate(config["lora"]):
-#         adapter_name = lora_config["name"]
-#         batch_data_config.append(mlora.LoraBatchDataConfig(adapter_name, idx, idx + 1))
-
-#     inference_max_len = 128
+#     target_lora = lora_config['name']
+#     inference_max_len = 1024
 
 #     while True:
+#         # TODO retrieve input from file
 #         input_raw = input("INPUT WITHOUT PROMPT: ")
 #         if input_raw == "QUIT":
 #             return
@@ -271,16 +267,16 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
 #         while len(tokens) < inference_max_len:
 #             tokens.append(tokenizer.pad_id_)
 
-#         input_data = mlora.MultiLoraBatchData(
-#             prompts_=[input_raw] * lora_adapter_num,
-#             lora_batch_data_config_=batch_data_config,
-#             batch_tokens_=[tokens] * lora_adapter_num,
-#             tokens_len_without_pad_=[token_len] * lora_adapter_num,
+#         input_data = mlora.LoraBatchData(
+#             prompts_=[input_raw],
+#             adapter_name_=target_lora,
+#             batch_tokens_=[tokens],
+#             tokens_len_without_pad_=[token_len],
 #             batch_seq_len_=inference_max_len,
-#             expand_side_=["right"] * lora_adapter_num,
+#             expand_side_=[lora_config['expand_side']],
 #             inference_model_=True)
 
-#         eos_flag: List[bool] = [False] * lora_adapter_num
+#         eos_flag: bool= False
 #         for pos in range(token_len, inference_max_len):
 #             with torch.no_grad():
 #                 # batch_size, seq_len, voc_logs
@@ -294,9 +290,8 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
 #                         eos_flag[idx] = True
 #                     input_data.tokens_len_without_pad_[
 #                         idx] = input_data.tokens_len_without_pad_[idx] + 1
-#             # check if the all sentence end
-#             have_all_done = all(flag for flag in eos_flag)
-#             if have_all_done:
+#             # check if the sentence ends
+#             if eos_flag:
 #                 break
 
 #         for idx, output in enumerate(input_data.batch_tokens_):
@@ -317,7 +312,7 @@ if __name__ == "__main__":
     torch.cuda.empty_cache()
 
     # if args.inference:
-        # inference(config, model, tokenizer)
+    #     inference(config, model, tokenizer)
     # else:
     dispatcher = mlora.Dispatcher(config, tokenizer)
     train(config, model, dispatcher)

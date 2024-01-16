@@ -42,9 +42,8 @@
                 "w2_proj": false,
                 "w3_proj": false
             },
-            "data": "data/dummy_data.json",
-            "test_data": "data/test_data_demo.json",
-            "prompt": "template/template_demo.json",
+            "data": "data/temporal.json",
+            "prompt": "template/template.json",
             "expand_side": "right"
         },
         {
@@ -62,9 +61,8 @@
                 "w2_proj": false,
                 "w3_proj": false
             },
-            "data": "data/dummy_data.json",
-            "test_data": "data/test_data_demo.json",
-            "prompt": "template/template_demo.json",
+            "data": "data/sharegpt.json",
+            "prompt": "template/template.json",
             "expand_side": "right"
         }
     ]

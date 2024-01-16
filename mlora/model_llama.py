@@ -229,8 +229,8 @@ class LlamaModel(LLMModel):
                             lora_dropout: float,
                             target: Dict[str, bool],
                             weight: Optional[Dict[str, torch.Tensor]]):
+        logging.info(f"Initializing {len(self.layers_)} lora layers")
         for idx, transformer_layer in enumerate(self.layers_):
-            logging.info(f"Initializing lora layer-{idx}")
             transformer_layer.init_lora_layer_weight(adapter_name, r, lora_alpha, lora_dropout, target, weight)
 
     # construct llama of our own by obtaining weight from LlamaForCausalLM.from_pretrained

@@ -268,13 +268,15 @@ class Dispatcher():
     def my_dispatch_strategy(self) -> Tuple[str, List[TrainData]]:
 
         min = 999999999999
-        for task in self.running_train_task_:
+        idx = 0
+        for i, task in enumerate(self.running_train_task_):
             if task.next_train_data_start_idx_ < min:
                 min = task.next_train_data_start_idx_
                 adapter_name = task.adapter_name_
+                idx = i
 
         # get_train_data moves forward data idx counter of this task
-        ret_train_data = task.get_train_data()
+        ret_train_data = self.running_train_task_[idx].get_train_data()
 
         return adapter_name, ret_train_data
 

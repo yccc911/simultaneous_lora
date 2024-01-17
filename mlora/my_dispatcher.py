@@ -209,7 +209,7 @@ class TrainTask():
 
         ret_data = self.train_token_data_[start_idx:end_idx]
 
-        logging.info(f"{self.adapter_name_} step in epoch {self.epoch_cnt_}/{self.total_epoch_num_}: {start_idx}/{len(self.train_token_data_)}")
+        logging.debug(f"{self.adapter_name_} step in epoch {self.epoch_cnt_}/{self.total_epoch_num_}: {start_idx}/{len(self.train_token_data_)}")
 
         self.next_train_data_start_idx_ += self.max_train_micro_batch_size_
         if self.next_train_data_start_idx_ >= len(self.train_token_data_):

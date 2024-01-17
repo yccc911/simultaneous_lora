@@ -254,16 +254,29 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     mlora.save_lora_model(llm_model, config)
 
 
+# def construct(instance):
+#     instance['prompt'] = f"{instance['sentence']}\n\nQuestion: {instance['question']}\n\nAnswer: {instance['answer']}.\n\nIs the answer a plausible one, yes or no?\n\n"
+#     return instance
+
 # def inference(lora_config: Dict[str, any], llm_model: mlora.LLMModel, tokenizer: mlora.Tokenizer):
 
 #     target_lora = lora_config['name']
 #     inference_max_len = 1024
 
-#     while True:
-#         # TODO retrieve input from file
-#         input_raw = input("INPUT WITHOUT PROMPT: ")
-#         if input_raw == "QUIT":
-#             return
+#     from datasets import load_dataset
+#     test_data = load_dataset("mc_taco", split="test")
+#     test_data = test_data.map(construct)
+#     prompt_list = []
+
+#     ans_list = []
+#     # for i in range(0, len(test_data), 10):
+#     #   prompt_list.append(test_data[i]['prompt'])
+#     #   ans_list.append(test_data[i]['label'])
+#     for data in test_data:
+#         prompt_list.append(data['prompt'])
+#         ans_list.append(data['label'])
+
+#     for input_raw in prompt_list:
 
 #         tokens = tokenizer.encode(input_raw, True, False)
 #         token_len = len(tokens)
@@ -291,8 +304,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
 #                     # end of the sentence
 #                     if next_token[idx].item() == tokenizer.eos_id_:
 #                         eos_flag[idx] = True
-#                     input_data.tokens_len_without_pad_[
-#                         idx] = input_data.tokens_len_without_pad_[idx] + 1
+#                     input_data.tokens_len_without_pad_[idx] = input_data.tokens_len_without_pad_[idx] + 1
 #             # check if the sentence ends
 #             if eos_flag:
 #                 break

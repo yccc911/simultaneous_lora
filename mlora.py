@@ -214,7 +214,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     for lora in config['lora']:
         step_cnt[lora['name']] = 0
 
-    progress = tqdm(total=dispatcher.get_total_train_data_len() // config['general_lora']['micro_batch_size'], desc="Training...")
+    progress = tqdm(total=dispatcher.get_total_train_data_len() // config['general_lora']['micro_batch_size'], desc="Training...", )
     logging.info("Start training!")
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()
@@ -226,7 +226,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         loss_input = output[..., :-1, :].contiguous().view(-1, llm_model.vocab_size_)
         loss_target = labels[..., 1:].contiguous().view(-1)
         loss = loss_fn(loss_input, loss_target)
-        # logging.info(f"step: {step_cnt[input.adapter_name_]} adapter: {input.adapter_name_} loss: {loss}")
+        logging.debug(f"adapter: {input.adapter_name_} step: {step_cnt[input.adapter_name_]} loss: {loss}")
         progress.set_postfix({"adapter": input.adapter_name_, "step": step_cnt[input.adapter_name_], "loss": loss.item()})
         progress.update(1)
         loss /= accumulation_step

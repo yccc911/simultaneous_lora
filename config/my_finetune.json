@@ -13,7 +13,7 @@
         "micro_batch_size": 4,
         "num_epochs": 1,
         "optim": "adamw",
-        "lr": 1e-2,
+        "lr": 3e-4,
         "dropout": 0.05,
         "target_modules": {
             "q_proj": true,
@@ -31,7 +31,7 @@
             "name": "temporal",
             "output": "temporal_lora",
             "optim": "adamw",
-            "lr": 1e-2,
+            "lr": 3e-4,
             "dropout": 0.05,
             "target_modules": {
                 "q_proj": true,

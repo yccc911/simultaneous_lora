@@ -214,7 +214,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     for lora in config['lora']:
         step_cnt[lora['name']] = 0
 
-    progress = tqdm(total=dispatcher.get_total_train_data_len() // config['general_lora']['micro_batch_size'], desc="Training...", leave=False)
+    progress = tqdm(total=dispatcher.get_total_train_data_len() // config['general_lora']['micro_batch_size'], desc="Training...", leave=True, position=0)
     logging.info("Start training!")
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()
@@ -248,8 +248,6 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         if step_cnt['general_lora'] % config["save_step"] == 0:
             logging.info(f"step: {step_cnt[input.adapter_name_]} saving model")
             mlora.save_lora_model(llm_model, config, f"{step_cnt}")
-
-    progress.close()
 
     mlora.save_lora_model(llm_model, config)
 

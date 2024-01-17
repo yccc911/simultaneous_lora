@@ -245,7 +245,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
             general_optimizer.step()
             general_optimizer.zero_grad()
 
-        if step_cnt[input.adapter_name_] % config["save_step"] == 0:
+        if step_cnt['general_lora'] % config["save_step"] == 0:
             logging.info(f"step: {step_cnt[input.adapter_name_]} saving model")
             mlora.save_lora_model(llm_model, config, f"{step_cnt}")
 

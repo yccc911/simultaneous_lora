@@ -99,8 +99,6 @@ def load_base_model() -> Tuple[mlora.Tokenizer, mlora.LLMModel]:
 
 # 1 general lora & multiple lora models
 def init_lora_model(config: Dict[str, any], llm_model: mlora.LLMModel):
-    if args.disable_lora:
-        return
 
     general_lora = config['general_lora']
     lora_weight = None

@@ -248,11 +248,11 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         # logging.info("loss.backward: calculating gradients")
         loss.backward()
         if step_cnt[input.adapter_name_] % accumulation_step == 0:
-            logging.debug(f"Adapter-{input.adapter_name_} gradient updates")
+            logging.info(f"Adapter-{input.adapter_name_} {step_cnt[input.adapter_name_]} gradient updates")
             all_optimizer[input.adapter_name_].step()
             all_optimizer[input.adapter_name_].zero_grad()
         if step_cnt['general_lora'] % accumulation_step == 0:
-            logging.debug(f"Adapter-general gradient updates")
+            logging.info(f"Adapter-general {step_cnt['general_lora']} gradient updates")
             general_optimizer.step()
             general_optimizer.zero_grad()
 

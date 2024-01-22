@@ -23,17 +23,17 @@ class TestDataSet(unittest.TestCase):
 
         for lora in config["lora"]:
             task = TrainTask(MockTokenizer(),
-                             lora["name"],
-                             lora["data"],
-                             -1,
-                             lora["test_data"],
-                             lora["prompt"],
-                             lora["num_epochs"],
-                             lora["batch_size"],
-                             lora["micro_batch_size"],
-                             lora["test_batch_size"],
-                             config["cutoff_len"],
-                             config.get("group_by_length", False))
+                                lora["name"],
+                                lora["data"],
+                                -1,
+                                lora["test_data"],
+                                lora["prompt"],
+                                lora["num_epochs"],
+                                lora["batch_size"],
+                                lora["micro_batch_size"],
+                                lora["test_batch_size"],
+                                config["cutoff_len"],
+                                config.get("group_by_length", False))
             task.load_data()
             tasks.append(task)
             self.assertEqual(len(task.train_token_data_), 2)

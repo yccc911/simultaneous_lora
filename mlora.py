@@ -180,7 +180,6 @@ def get_general_optimizer(config: Dict[str, any], general_train_para: torch.Tens
 # (?) should be in accordance with the number of training inputs from every dataset
 def get_accumulation_steps(config: Dict[str, any]) -> Dict[str, any]:
     ret_accumulation_step = {}
-
     micro_batch_size = config['general_lora']["micro_batch_size"]
     for lora in config['lora']:
         batch_size = lora["batch_size"]

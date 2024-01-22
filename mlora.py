@@ -227,7 +227,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         logging.debug(f"adapter: {input.adapter_name_} step: {step_cnt[input.adapter_name_]} loss: {loss}")
         progress.set_postfix({"adapter": input.adapter_name_, "step": step_cnt[input.adapter_name_], "loss": loss.item()})
         progress.update(1)
-        loss /= accumulation_step
+        loss /= accumulation_step[input.adapter_name_]
 
         step_cnt['general_lora'] += 1
         step_cnt[input.adapter_name_] += 1

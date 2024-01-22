@@ -235,6 +235,7 @@ class Dispatcher():
 
     strategy_: str = ""
     current_adapter: str = ""
+    train_batch_size: int = 0
 
     def __init__(self, config: Dict[str, any], tokenizer: Tokenizer) -> None:
         logging.info("Initializing dispatcher")
@@ -276,7 +277,7 @@ class Dispatcher():
                     min = task.next_train_data_start_idx_
                     self.current_adapter = adapter
 
-            self.running_train_task_[self.current_adapter].current_batch_data_num = self.running_train_task_[self.current_adapter].max_train_batch_size_
+            self.running_train_task_[self.current_adapter].current_batch_data_num = self.train_batch_size
 
         self.running_train_task_[self.current_adapter].current_batch_data_num -= self.running_train_task_[self.current_adapter].max_train_micro_batch_size_
         ret_train_data = self.running_train_task_[self.current_adapter].get_train_data()
@@ -312,6 +313,7 @@ class Dispatcher():
             # to lazy load data
             task.load_data()
             self.running_train_task_[task.adapter_name_] = task
+            self.train_batch_size = max(self.train_batch_size, task.max_train_batch_size_)
 
 
     # running task -> done task

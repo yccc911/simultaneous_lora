@@ -85,15 +85,13 @@ def setup_seed(seed):
 
 
 def load_base_model() -> Tuple[mlora.Tokenizer, mlora.LLMModel]:
-    if args.model_type == "llama":
-        model = mlora.LlamaModel.from_pretrained(
-            path=args.base_model,
-            device=args.device,
-            bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
-            # log_fn=log
-        )
-    else:
-        raise ValueError(f"unknown model type {args.model_type}")
+    logging.info("Initializing llama model")
+    model = mlora.LlamaModel.from_pretrained(
+        path=args.base_model,
+        device=args.device,
+        bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
+        # log_fn=log
+    )
 
     logging.info("Initializing tokenizer")
     tokenizer = mlora.Tokenizer(args.base_model)

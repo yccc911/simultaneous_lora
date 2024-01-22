@@ -205,10 +205,10 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     loss_fn = torch.nn.CrossEntropyLoss()
 
     step_cnt = {
-        "general_lora": 1
+        "general_lora": 0
     }
     for lora in config['lora']:
-        step_cnt[lora['name']] = 1
+        step_cnt[lora['name']] = 0
 
     progress = tqdm(total=dispatcher.get_total_train_data_len() // config['general_lora']['micro_batch_size'], desc="Training")
     logging.info("Start training!")

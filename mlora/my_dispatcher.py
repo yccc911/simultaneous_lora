@@ -259,7 +259,7 @@ class Dispatcher():
                             prompt_template_path=lora["prompt"],
                             total_epoch_num=general_lora["num_epochs"],
                             max_train_batch_size=lora["batch_size"],
-                            max_train_micro_batch_size=lora["micro_batch_size"],
+                            max_train_micro_batch_size=general_lora["micro_batch_size"],
                             # max_test_batch_size=lora["test_batch_size"],
                             train_cutoff_len=config["cutoff_len"],
                             # group_by_length=lora.get("group_by_length", True)

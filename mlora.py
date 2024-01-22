@@ -181,9 +181,9 @@ def get_general_optimizer(config: Dict[str, any], general_train_para: torch.Tens
 def get_accumulation_steps(config: Dict[str, any]) -> Dict[str, any]:
     ret_accumulation_step = {}
 
+    micro_batch_size = config['general_lora']["micro_batch_size"]
     for lora in config['lora']:
-        batch_size = lora['name']["batch_size"]
-        micro_batch_size = lora['name']["micro_batch_size"]
+        batch_size = lora["batch_size"]
 
         if batch_size < micro_batch_size or batch_size % micro_batch_size != 0:
             raise ValueError(f"error: {lora['name']} batch_size {batch_size} and micro batch size {micro_batch_size}")
@@ -219,7 +219,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     for lora in config['lora']:
         step_cnt[lora['name']] = 1
 
-    progress = tqdm(total=dispatcher.get_total_train_data_len() // config['general_lora']['micro_batch_size'], desc="Training...")
+    progress = tqdm(total=dispatcher.get_total_train_data_len() // config['general_lora']['micro_batch_size'], desc="Training")
     logging.info("Start training!")
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()

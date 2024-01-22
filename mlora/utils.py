@@ -20,7 +20,7 @@ def convert_hf_to_pth(source: str, dest: str):
 def save_lora_model(model: LlamaModel, config: Dict[str, str], dir_suffix=""):
 
     logging.info("Saving general lora model")
-    general_lora = config['general_lora']
+    general_lora = config[model.general_lora_name]
     lora_name = general_lora["name"]
     lora_output_dir = general_lora["output"]
     if dir_suffix != "":

@@ -200,8 +200,6 @@ class LlamaModel(LLMModel):
         # need to set
         self.eos_token_id_ = -1
 
-        self.general_lora_name = 'general_lora'
-
     # train model or inference model: output is probs
     def forward(self, input: LoraBatchData) -> torch.Tensor:
         tokens = torch.tensor(input.batch_tokens_, dtype=torch.int64).to(self.device_)
@@ -332,7 +330,7 @@ class LlamaModel(LLMModel):
     def get_general_train_paramas(self) -> List[torch.Tensor]:
         general_train_para = []
 
-        adapter_name = self.general_lora_name
+        adapter_name = 'general_lora'
         for transformer_layer in self.layers_:
 
             lora_layer_list = [transformer_layer.wq_.loras_, transformer_layer.wk_.loras_,

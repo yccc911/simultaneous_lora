@@ -9,6 +9,7 @@
         "r": 8,
         "alpha": 8,
         "_alpha_comment": "alpha/r == scaling factor of EVERY lora",
+        "micro_batch_size": 4,
         "num_epochs": 1,
         "optim": "adamw",
         "lr": 3e-4,
@@ -32,7 +33,6 @@
             "lr": 3e-4,
             "dropout": 0.05,
             "batch_size": 16,
-            "micro_batch_size": 4,
             "target_modules": {
                 "q_proj": true,
                 "k_proj": true,
@@ -53,7 +53,6 @@
             "lr": 3e-4,
             "dropout": 0.05,
             "batch_size": 32,
-            "micro_batch_size": 4,
             "target_modules": {
                 "q_proj": true,
                 "k_proj": true,

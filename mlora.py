@@ -29,14 +29,10 @@ from tqdm.auto import tqdm
 parser = argparse.ArgumentParser(description='m-LoRA main program')
 parser.add_argument('--base_model', type=str,
                     help='Path to or name of base model')
-parser.add_argument('--model_type', type=str, default="llama",
-                    help='The model type, support: llama, chatglm')
 parser.add_argument('--inference', action="store_true",
                     help='The inference mode (just for test)')
 parser.add_argument('--load_lora', action="store_true",
                     help="Load lora from file instead of init randomly")
-parser.add_argument('--disable_lora', action="store_true",
-                    help="Disable the lora modules")
 parser.add_argument('--tokenizer', type=str,
                     help='Path to or name of tokenizer')
 parser.add_argument('--load_8bit', action="store_true",
@@ -238,7 +234,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         step_cnt['general_lora'] += 1
         step_cnt[input.adapter_name_] += 1
 
-        # logging.info("loss.backward: calculating gradients")
+        logging.debug("calculating gradients")
         loss.backward()
         if step_cnt[input.adapter_name_] % accumulation_step == 0:
             logging.info(f"Adapter-{input.adapter_name_} {step_cnt[input.adapter_name_]} gradient updates")

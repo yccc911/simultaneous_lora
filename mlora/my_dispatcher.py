@@ -279,10 +279,10 @@ class Dispatcher():
             self.running_train_task_[self.current_adapter].current_batch_data_num = self.running_train_task_[self.current_adapter].max_train_batch_size_
 
         self.running_train_task_[self.current_adapter].current_batch_data_num -= self.running_train_task_[self.current_adapter].max_train_micro_batch_size_
-        ret_train_data = {self.current_adapter, self.running_train_task_[self.current_adapter].get_train_data()}
+        ret_train_data = self.running_train_task_[self.current_adapter].get_train_data()
         # get_train_data moves forward data idx counter of this task
 
-        return ret_train_data
+        return self.current_adapter , ret_train_data
 
 
     # ready task number == 0 and running task number == 0

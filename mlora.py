@@ -180,15 +180,26 @@ def get_general_optimizer(config: Dict[str, any], general_train_para: torch.Tens
 
 
 # (?) should be in accordance with the number of training inputs from every dataset
-def get_accumulation_steps(config: Dict[str, any]) -> int:
+def get_accumulation_steps(config: Dict[str, any]) -> Dict[str, any]:
     general_lora = config['general_lora']
     batch_size = general_lora["batch_size"]
     micro_batch_size = general_lora["micro_batch_size"]
 
     if batch_size < micro_batch_size or batch_size % micro_batch_size != 0:
-        raise ValueError(f"error batch_size {batch_size} and micro batch size {micro_batch_size}")
+        raise ValueError(f"error: general_lora batch_size {batch_size} and micro batch size {micro_batch_size}")
 
-    ret_accumulation_step = batch_size / micro_batch_size
+    ret_accumulation_step = {
+        "general_lora": batch_size / micro_batch_size
+    }
+    for lora in config['lora']:
+        batch_size = lora['name']["batch_size"]
+        micro_batch_size = lora['name']["micro_batch_size"]
+
+        if batch_size < micro_batch_size or batch_size % micro_batch_size != 0:
+            raise ValueError(f"error: {lora['name']} batch_size {batch_size} and micro batch size {micro_batch_size}")
+
+        ret_accumulation_step[lora['name']] = batch_size / micro_batch_size
+
     return ret_accumulation_step
 
 
@@ -204,7 +215,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     logging.debug("Getting optimizers for general lora model")
     general_optimizer: torch.optim.Optimizer = get_general_optimizer(config, general_train_para)
 
-    accumulation_step: int = get_accumulation_steps(config)
+    accumulation_step: Dict[str, int] = get_accumulation_steps(config)
 
     loss_fn = torch.nn.CrossEntropyLoss()
 

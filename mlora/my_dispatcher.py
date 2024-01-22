@@ -55,6 +55,7 @@ class TrainTask():
     max_train_batch_size_: int = -1
     max_train_micro_batch_size_: int = -1
     # max_test_batch_size_: int = -1
+    current_batch_data_num: int = 0
 
     train_cutoff_len_: int = -1
     # group_by_length_: bool = False
@@ -225,7 +226,7 @@ class Dispatcher():
 
     # all train task
     ready_train_task_: List[TrainTask] = None
-    running_train_task_: List[TrainTask] = None
+    running_train_task_: Dict[str, TrainTask] = None
     done_train_task_: List[TrainTask] = None
 
     # the number of max candidate training lora model
@@ -233,6 +234,7 @@ class Dispatcher():
     train_lora_candidate_num_: int = 0
 
     strategy_: str = ""
+    current_adapter: str = ""
 
     def __init__(self, config: Dict[str, any], tokenizer: Tokenizer) -> None:
         logging.info("Initializing dispatcher")
@@ -240,7 +242,7 @@ class Dispatcher():
         self.config_ = config
 
         self.ready_train_task_ = []
-        self.running_train_task_ = []
+        self.running_train_task_ = {}
         self.done_train_task_ = []
 
         self.train_lora_candidate_num_ = config["train_lora_candidate_num"]
@@ -256,8 +258,8 @@ class Dispatcher():
                             # test_data_path=lora.get("test_data", None),
                             prompt_template_path=lora["prompt"],
                             total_epoch_num=general_lora["num_epochs"],
-                            max_train_batch_size=general_lora["batch_size"],
-                            max_train_micro_batch_size=general_lora["micro_batch_size"],
+                            max_train_batch_size=lora["batch_size"],
+                            max_train_micro_batch_size=lora["micro_batch_size"],
                             # max_test_batch_size=lora["test_batch_size"],
                             train_cutoff_len=config["cutoff_len"],
                             # group_by_length=lora.get("group_by_length", True)
@@ -267,18 +269,20 @@ class Dispatcher():
     # to get tasks from ready_tasks of each lora by turns
     def my_dispatch_strategy(self) -> Tuple[str, List[TrainData]]:
 
-        min = 999999999999
-        idx = 0
-        for i, task in enumerate(self.running_train_task_):
-            if task.next_train_data_start_idx_ < min:
-                min = task.next_train_data_start_idx_
-                adapter_name = task.adapter_name_
-                idx = i
+        if self.current_adapter == None or self.running_train_task_[self.current_adapter].current_batch_data_num == 0:
+            min = 999999999999999
+            for adapter, task in self.running_train_task_.items():
+                if task.next_train_data_start_idx_ < min:
+                    min = task.next_train_data_start_idx_
+                    self.current_adapter = adapter
 
+            self.running_train_task_[self.current_adapter].current_batch_data_num = self.running_train_task_[self.current_adapter].max_train_batch_size_
+
+        self.running_train_task_[self.current_adapter].current_batch_data_num -= self.running_train_task_[self.current_adapter].max_train_micro_batch_size_
+        ret_train_data = {self.current_adapter, self.running_train_task_[self.current_adapter].get_train_data()}
         # get_train_data moves forward data idx counter of this task
-        ret_train_data = self.running_train_task_[idx].get_train_data()
 
-        return adapter_name, ret_train_data
+        return ret_train_data
 
 
     # ready task number == 0 and running task number == 0
@@ -290,7 +294,7 @@ class Dispatcher():
 
     # check if every lora is done with their training
     def check_test_done(self) -> bool:
-        for task in self.running_train_task_:
+        for task in self.running_train_task_.values():
             if task.is_train_done():
                 return False
         return True
@@ -307,13 +311,13 @@ class Dispatcher():
             task = self.ready_train_task_.pop(0)
             # to lazy load data
             task.load_data()
-            self.running_train_task_.append(task)
+            self.running_train_task_[task.adapter_name_] = task
 
 
     # running task -> done task
     def __dispatch_task_out(self):
-        done_task = [task for task in self.running_train_task_ if task.is_train_done()]
-        self.running_train_task_ = [task for task in self.running_train_task_ if not task.is_train_done()]
+        done_task = [task for task in self.running_train_task_.values() if task.is_train_done()]
+        self.running_train_task_ = {key: task for (key, task) in self.running_train_task_.items() if not task.is_train_done()}
         self.done_train_task_.extend(done_task)
 
 

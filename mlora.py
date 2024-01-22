@@ -181,11 +181,9 @@ def get_accumulation_steps(config: Dict[str, any]) -> Dict[str, any]:
         if batch_size < micro_batch_size or batch_size % micro_batch_size != 0:
             raise ValueError(f"error: {lora['name']} batch_size {batch_size} and micro batch size {micro_batch_size}")
 
-        ret_accumulation_step[lora['name']] = batch_size / micro_batch_size
+        ret_accumulation_step[lora['name']] = batch_size // micro_batch_size
 
-    ret_accumulation_step = {
-        "general_lora": min(ret_accumulation_step.values())
-    }
+    ret_accumulation_step["general_lora"] = min(ret_accumulation_step.values())
 
     return ret_accumulation_step
 

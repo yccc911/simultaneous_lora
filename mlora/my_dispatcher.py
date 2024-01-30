@@ -275,13 +275,13 @@ class Dispatcher():
     def my_dispatch_strategy(self) -> Tuple[str, List[TrainData]]:
 
         if self.current_adapter == "" or self.running_train_task_[self.current_adapter].current_batch_data_num == 0:
-            min = 999999999999999
+            tmp = 999999999999999
             for adapter, task in self.running_train_task_.items():
-                if task.next_train_data_start_idx_ < min:
-                    min = task.next_train_data_start_idx_
+                if task.next_train_data_start_idx_ < tmp:
+                    tmp = task.next_train_data_start_idx_
                     self.current_adapter = adapter
-            data_left = self.running_train_task_[self.current_adapter].train_data_left()
-            self.running_train_task_[self.current_adapter].current_batch_data_num = min(self.train_batch_size, data_left)
+
+            self.running_train_task_[self.current_adapter].current_batch_data_num = min(self.train_batch_size, self.running_train_task_[self.current_adapter].train_data_left())
 
         self.running_train_task_[self.current_adapter].current_batch_data_num -= self.running_train_task_[self.current_adapter].max_train_micro_batch_size_
         ret_train_data = self.running_train_task_[self.current_adapter].get_train_data()

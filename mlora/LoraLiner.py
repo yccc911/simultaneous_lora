@@ -27,7 +27,8 @@ class Lora():
         self.r_ = r
         self.alpha_ = alpha
         self.dropout_ = dropout
-        self.scaling_ = alpha / r
+        # self.scaling_ = alpha / r
+        self.scaling_ = 0.5
 
     def forward(self, data: torch.Tensor) -> torch.Tensor:
         data_ = F.dropout(data, self.dropout_)

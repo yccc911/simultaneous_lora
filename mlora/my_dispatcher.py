@@ -376,9 +376,9 @@ class Dispatcher():
                             tokens_len_without_pad_=tokens_len_without_pad)
 
     def get_total_train_data_len(self):
-        cnt = 0
+        cnt = {}
         for task in self.ready_train_task_:
             with open(task.data_path_) as f:
                 dataset = json.load(f)
-            cnt += len(dataset)
+            cnt[task.adapter_name_] =  len(dataset)
         return cnt

@@ -260,7 +260,7 @@ class LlamaModel(LLMModel):
                     bnb_4bit_use_double_quant=double_quant,
                     bnb_4bit_quant_type=quant_type,
                 ),
-                torch_dtype=(torch.float32 if fp16 else (torch.bfloat16 if bf16 else torch.float32)))
+                torch_dtype=(torch.float16 if fp16 else (torch.bfloat16 if bf16 else torch.float32)))
         else:
             llama_model = LlamaForCausalLM.from_pretrained(
                 path,

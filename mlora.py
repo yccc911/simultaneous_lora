@@ -150,10 +150,16 @@ def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]
 
     return optimizer
 
+def get_scheduler(optimizers: Dict[str, torch.optim.Optimizer]):
+    schedulers: Dict[str, torch.optim.lr_scheduler.LinearLR]
+    for lora, optimizer in optimizers.keys():
+        data_size = dispatcher.get_total_train_data_len()
+        schedulers[lora] = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1, end_factor=0.1, total_iters=data_size[lora] // 2)
+    return schedulers
+
 
 def get_general_optimizer(config: Dict[str, any], general_train_para: torch.Tensor) -> torch.optim.Optimizer:
     general_optimizer: torch.optim.Optimizer = None
-
     general_lora = config['general_lora']
     optim_name = general_lora["optim"]
     lr = general_lora["lr"]
@@ -194,11 +200,15 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     all_train_paramas: Dict[str, List[torch.Tensor]] = llm_model.get_train_paramas(config)
     logging.debug("Getting optimizers for every independent lora model")
     all_optimizer: Dict[str, torch.optim.Optimizer] = get_optimizer(config, all_train_paramas)
+    logging.debug("Getting schedulers for every independent lora model")
+    all_scheduler: Dict[str, torch.optim.lr_scheduler.LinearLR] = get_scheduler(all_optimizer)
 
     logging.debug("Getting training parameters for general lora model")
     general_train_para: torch.Tensor = llm_model.get_general_train_paramas()
-    logging.debug("Getting optimizers for general lora model")
+    logging.debug("Getting optimizer for general lora model")
     general_optimizer: torch.optim.Optimizer = get_general_optimizer(config, general_train_para)
+    logging.debug("Getting scheduler for general lora model")
+    genera_scheduler: torch.optim.lr_scheduler.LinearLR(general_optimizer, start_factor=1, end_factor=0.1, total_iters=sum(dispatcher.get_total_train_data_len().values()) // 2)
 
     accumulation_step: Dict[str, int] = get_accumulation_steps(config)
 
@@ -210,7 +220,7 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
     for lora in config['lora']:
         step_cnt[lora['name']] = 0
 
-    progress = tqdm(total=dispatcher.get_total_train_data_len() // config['general_lora']['micro_batch_size'], desc="Training")
+    progress = tqdm(total=dispatcher.get_total_train_data_len().values() // config['general_lora']['micro_batch_size'], desc="Training")
     logging.info("Start training!")
     while not dispatcher.check_task_done():
         input: mlora.LoraBatchData = dispatcher.get_train_data()
@@ -233,13 +243,15 @@ def train(config: Dict[str, any], llm_model: mlora.LLMModel, dispatcher: mlora.D
         logging.debug("calculating gradients")
         loss.backward()
         if step_cnt[input.adapter_name_] % accumulation_step[input.adapter_name_] == 0:
-            logging.info(f"Adapter-{input.adapter_name_} {step_cnt[input.adapter_name_]} gradient updates")
+            logging.info(f"Adapter-{input.adapter_name_} {step_cnt[input.adapter_name_]} gradient updates, lr={all_scheduler[input.adapter_name_].get_last_lr()}")
             all_optimizer[input.adapter_name_].step()
             all_optimizer[input.adapter_name_].zero_grad()
+            all_scheduler[input.adapter_name_].step()
         if step_cnt['general_lora'] % accumulation_step['general_lora'] == 0:
-            logging.info(f"Adapter-general {step_cnt['general_lora']} gradient updates")
+            logging.info(f"Adapter-general {step_cnt['general_lora']} gradient updates, lr={genera_scheduler.get_last_lr()}")
             general_optimizer.step()
             general_optimizer.zero_grad()
+            genera_scheduler.step()
 
         if step_cnt['general_lora'] % config["save_step"] == 0:
             logging.info(f"step: {step_cnt['general_lora']} saving model")

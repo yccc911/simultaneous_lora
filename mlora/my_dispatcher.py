@@ -202,6 +202,10 @@ class TrainTask():
         return len(self.train_token_data_[start_idx].tokens_)
 
 
+    def train_data_left(self):
+        return len(self.train_token_data_) - self.next_train_data_start_idx_
+
+
     # return training data for this batch
     # non reentry function
     def get_train_data(self) -> List[TrainData]:
@@ -277,7 +281,7 @@ class Dispatcher():
                     min = task.next_train_data_start_idx_
                     self.current_adapter = adapter
 
-            self.running_train_task_[self.current_adapter].current_batch_data_num = self.train_batch_size
+            self.running_train_task_[self.current_adapter].current_batch_data_num = min(self.train_batch_size,  self.running_train_task_[self.current_adapter].train_data_left())
 
         self.running_train_task_[self.current_adapter].current_batch_data_num -= self.running_train_task_[self.current_adapter].max_train_micro_batch_size_
         ret_train_data = self.running_train_task_[self.current_adapter].get_train_data()

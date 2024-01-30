@@ -6,8 +6,8 @@
     "general_lora": {
         "name": "general_lora",
         "output": "general_lora",
-        "r": 8,
-        "alpha": 8,
+        "r": 96,
+        "alpha": 96,
         "_alpha_comment": "alpha/r == scaling factor of EVERY lora",
         "micro_batch_size": 4,
         "num_epochs": 2,
@@ -42,7 +42,7 @@
                 "w2_proj": false,
                 "w3_proj": false
             },
-            "data": "data/temporal.json",
+            "data": "data/mmlu.json",
             "prompt": "template/template.json",
             "expand_side": "right"
         }

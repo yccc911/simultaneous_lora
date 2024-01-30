@@ -152,7 +152,7 @@ def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]
 
 def get_scheduler(optimizers: Dict[str, torch.optim.Optimizer]):
     schedulers: Dict[str, torch.optim.lr_scheduler.LinearLR]
-    for lora, optimizer in optimizers.keys():
+    for lora, optimizer in optimizers:
         data_size = dispatcher.get_total_train_data_len()
         schedulers[lora] = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1, end_factor=0.1, total_iters=data_size[lora] // 2)
     return schedulers

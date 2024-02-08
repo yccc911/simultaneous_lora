@@ -265,7 +265,9 @@ class LlamaModel(LLMModel):
             llama_model = LlamaForCausalLM.from_pretrained(
                 path,
                 device_map=device,
-                torch_dtype=torch.float32)
+                torch_dtype=torch.float32,
+                use_auth_token=True,
+                token="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")
 
         llama_args = LLMModelArgs()
         llama_args.dim_ = llama_model.config.hidden_size

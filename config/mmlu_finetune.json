@@ -12,7 +12,7 @@
         "micro_batch_size": 4,
         "num_epochs": 2,
         "optim": "adamw",
-        "lr": 5e-6,
+        "lr": 5e-5,
         "dropout": 0.05,
         "target_modules": {
             "q_proj": true,
@@ -30,7 +30,7 @@
             "name": "mmlu",
             "output": "mmlu_lora",
             "optim": "adamw",
-            "lr": 5e-6,
+            "lr": 5e-5,
             "dropout": 0.05,
             "batch_size": 32,
             "target_modules": {

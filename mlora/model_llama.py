@@ -241,6 +241,8 @@ class LlamaModel(LLMModel):
                         quant_type: str = 'nf4',
                         log_fn=None) -> LLMModel:
         logging.info("Initializing llama base model")
+        from huggingface_hub import login
+        login("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")
         if bits in [4, 8]:
             if log_fn is not None:
                 log_fn('Loading model with quantization, bits = %i' % bits)
@@ -265,9 +267,7 @@ class LlamaModel(LLMModel):
             llama_model = LlamaForCausalLM.from_pretrained(
                 path,
                 device_map=device,
-                torch_dtype=torch.float32,
-                use_auth_token=True,
-                token="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")
+                torch_dtype=torch.float32)
 
         llama_args = LLMModelArgs()
         llama_args.dim_ = llama_model.config.hidden_size

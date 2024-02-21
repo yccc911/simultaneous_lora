@@ -24,7 +24,7 @@ def save_lora_model(model: LlamaModel, config: Dict[str, str], dir_suffix=""):
     lora_name = general_lora["name"]
     lora_output_dir = general_lora["output"]
     if dir_suffix != "":
-        lora_output_dir += os.sep + general_lora["output"] + "_" + dir_suffix
+        lora_output_dir += os.sep + dir_suffix
 
     if not os.path.exists(lora_output_dir):
         os.makedirs(lora_output_dir)
@@ -50,7 +50,7 @@ def save_lora_model(model: LlamaModel, config: Dict[str, str], dir_suffix=""):
         logging.info(f"Saving indepedent lora model: {lora_name}")
         lora_output_dir = lora_config["output"]
         if dir_suffix != "":
-            lora_output_dir += os.sep + lora_config["output"] + "_" + dir_suffix
+            lora_output_dir += os.sep + dir_suffix
 
         if not os.path.exists(lora_output_dir):
             os.makedirs(lora_output_dir)

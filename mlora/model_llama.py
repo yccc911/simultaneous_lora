@@ -50,7 +50,7 @@ class RMSNormLayer(torch.nn.Module):
 
     def forward(self, data: torch.Tensor) -> torch.Tensor:
         input_dtype = data.dtype
-        v = data.to(torch.float32).pow(2).mean(-1, keepdim=True)
+        v = data.to(torch.float32).pow(2).mean(-1, keepdim=True) # concatenated high-dimensional embedding -> linear embedding ?
         data = data * torch.rsqrt(v + self.norm_eps_)
 
         return (self.weight_ * data).to(input_dtype)
@@ -241,6 +241,7 @@ class LlamaModel(LLMModel):
                         quant_type: str = 'nf4',
                         log_fn=None) -> LLMModel:
         logging.info("Initializing llama base model")
+        # TODO load as script arguments
         from huggingface_hub import login
         login("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")
         if bits in [4, 8]:

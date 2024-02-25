@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.utils.checkpoint
 import xformers.ops
 import xformers.ops.fmha.attn_bias
-from transformers import LlamaForCausalLM
+from transformers import AutoModelForCausalLM
 from typing import List, Dict, Tuple, Optional
 from collections import OrderedDict
 import logging
@@ -231,7 +231,7 @@ class LlamaModel(LLMModel):
         for idx, transformer_layer in enumerate(self.layers_):
             transformer_layer.init_lora_layer_weight(adapter_name, r, lora_alpha, lora_dropout, target, weight)
 
-    # construct llama of our own by obtaining weight from LlamaForCausalLM.from_pretrained
+    # construct llama of our own by obtaining weight from AutoModelForCausalLM.from_pretrained
     def from_pretrained(path: str,
                         device: str,
                         bits: int = None,
@@ -249,7 +249,7 @@ class LlamaModel(LLMModel):
                 log_fn('Loading model with quantization, bits = %i' % bits)
             from transformers import BitsAndBytesConfig
             compute_dtype = (torch.float16 if fp16 else (torch.bfloat16 if bf16 else torch.float32))
-            llama_model = LlamaForCausalLM.from_pretrained(
+            llama_model = AutoModelForCausalLM.from_pretrained(
                 path,
                 load_in_4bit=bits == 4,
                 load_in_8bit=bits == 8,
@@ -265,7 +265,7 @@ class LlamaModel(LLMModel):
                 ),
                 torch_dtype=(torch.float16 if fp16 else (torch.bfloat16 if bf16 else torch.float32)))
         else:
-            llama_model = LlamaForCausalLM.from_pretrained(
+            llama_model = AutoModelForCausalLM.from_pretrained(
                 path,
                 device_map=device,
                 torch_dtype=torch.float32)

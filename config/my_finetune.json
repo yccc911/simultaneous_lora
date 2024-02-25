@@ -6,13 +6,13 @@
     "general_lora": {
         "name": "general_lora",
         "output": "general_lora",
-        "r": 8,
-        "alpha": 8,
+        "r": 96,
+        "alpha": 96,
         "_alpha_comment": "alpha/r == scaling factor of EVERY lora",
         "micro_batch_size": 4,
         "num_epochs": 1,
         "optim": "adamw",
-        "lr": 3e-4,
+        "lr": 5e-5,
         "dropout": 0.05,
         "target_modules": {
             "q_proj": true,
@@ -30,9 +30,9 @@
             "name": "temporal",
             "output": "temporal_lora",
             "optim": "adamw",
-            "lr": 3e-4,
+            "lr": 5e-5,
             "dropout": 0.05,
-            "batch_size": 16,
+            "batch_size": 32,
             "target_modules": {
                 "q_proj": true,
                 "k_proj": true,
@@ -50,7 +50,7 @@
             "name": "sharegpt",
             "output": "sharegpt_lora",
             "optim": "adamw",
-            "lr": 3e-4,
+            "lr": 5e-5,
             "dropout": 0.05,
             "batch_size": 32,
             "target_modules": {

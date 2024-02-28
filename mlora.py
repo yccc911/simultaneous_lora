@@ -29,6 +29,8 @@ from tqdm.auto import tqdm
 parser = argparse.ArgumentParser(description='m-LoRA main program')
 parser.add_argument('--base_model', type=str,
                     help='Path to or name of base model')
+parser.add_argument('--model_type', type=str, default="llama",
+                    help='The model type, support: llama')
 parser.add_argument('--inference', action="store_true",
                     help='The inference mode (just for test)')
 parser.add_argument('--load_lora', action="store_true",

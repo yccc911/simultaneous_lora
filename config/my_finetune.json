@@ -19,9 +19,9 @@
             "k_proj": false,
             "v_proj": false,
             "o_proj": false,
-            "w1_proj": true,
-            "w2_proj": true,
-            "w3_proj": true
+            "w1_gate_proj": true,
+            "w2_down_proj": true,
+            "w3_up_proj": true
         },
         "expand_side": "right"
     },
@@ -38,9 +38,9 @@
                 "k_proj": false,
                 "v_proj": false,
                 "o_proj": false,
-                "w1_proj": true,
-                "w2_proj": true,
-                "w3_proj": true
+                "w1_gate_proj": true,
+                "w2_down_proj": true,
+                "w3_up_proj": true
             },
             "data": "data/sharegpt.json",
             "prompt": "template/template.json",
@@ -58,9 +58,9 @@
                 "k_proj": false,
                 "v_proj": false,
                 "o_proj": false,
-                "w1_proj": true,
-                "w2_proj": true,
-                "w3_proj": true
+                "w1_gate_proj": true,
+                "w2_down_proj": true,
+                "w3_up_proj": true
             },
             "data": "data/mmlu.json",
             "prompt": "template/template.json",
@@ -78,9 +78,9 @@
                 "k_proj": false,
                 "v_proj": false,
                 "o_proj": false,
-                "w1_proj": true,
-                "w2_proj": true,
-                "w3_proj": true
+                "w1_gate_proj": true,
+                "w2_down_proj": true,
+                "w3_up_proj": true
             },
             "data": "data/drop.json",
             "prompt": "template/template.json",

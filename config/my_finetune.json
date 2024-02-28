@@ -9,7 +9,7 @@
         "r": 32,
         "alpha": 32,
         "_alpha_comment": "alpha/r == scaling factor of EVERY lora",
-        "micro_batch_size": 2,
+        "micro_batch_size": 1,
         "num_epochs": 1,
         "optim": "adamw",
         "lr": 5e-5,
@@ -32,7 +32,7 @@
             "optim": "adamw",
             "lr": 5e-5,
             "dropout": 0.05,
-            "batch_size": 32,
+            "batch_size": 16,
             "target_modules": {
                 "q_proj": false,
                 "k_proj": false,
@@ -52,7 +52,7 @@
             "optim": "adamw",
             "lr": 5e-5,
             "dropout": 0.05,
-            "batch_size": 32,
+            "batch_size": 16,
             "target_modules": {
                 "q_proj": false,
                 "k_proj": false,
@@ -72,7 +72,7 @@
             "optim": "adamw",
             "lr": 5e-5,
             "dropout": 0.05,
-            "batch_size": 32,
+            "batch_size": 16,
             "target_modules": {
                 "q_proj": false,
                 "k_proj": false,

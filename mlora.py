@@ -89,14 +89,14 @@ def load_base_model() -> Tuple[mlora.Tokenizer, mlora.LLMModel]:
             path=args.base_model,
             device=args.device,
             bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
-            log_fn=log
+            # log_fn=log
         )
     elif args.model_type == "gemma":
         model = mlora.GemmaModel.from_pretrained(
             path=args.base_model,
             device=args.device,
             bits=(8 if args.load_8bit else (4 if args.load_4bit else None)),
-            log_fn=log
+            # log_fn=log
         )
     else:
         raise f"unkown model type {args.model_type}"

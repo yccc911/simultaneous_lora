@@ -140,7 +140,7 @@ def init_lora_model(config: Dict[str, any], llm_model: mlora.LLMModel):
                                     lora_config["dropout"],
                                     lora_config["target_modules"],
                                     lora_weight)
-    logging.info(f"Initialized lora: {llm_model.layers_[-1].wq_.loras_.keys()}")
+    logging.info(f"Initialized lora: {llm_model.layers_[-1].w1_gate.loras_.keys()}")
 
 
 def get_optimizer(config: Dict[str, any], train_paramas: Dict[str, torch.Tensor]) -> Dict[str, torch.optim.Optimizer]:

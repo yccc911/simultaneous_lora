@@ -31,8 +31,7 @@ def precompute_mask(input: LoraBatchData,
 
 # used in LlamaModel to calculate rope angels
 def precompute_rope_angle(dim: int, seq_len: int, device: str, theta: float = 10000.0) -> Tuple[torch.Tensor, torch.Tensor]:
-    angles = 1.0 / (theta ** (torch.arange(0, dim, 2).to(device)
-                              [: (dim // 2)].to(torch.float) / dim))
+    angles = 1.0 / (theta ** (torch.arange(0, dim, 2).to(device)[: (dim // 2)].to(torch.float) / dim))
     seq = torch.arange(seq_len, device=angles.device)
     emb = torch.outer(seq, angles).float()
     emb = einops.repeat(emb, "... n -> ... (n r)", r=2)
@@ -42,7 +41,9 @@ def precompute_rope_angle(dim: int, seq_len: int, device: str, theta: float = 10
     return (emb.cos().to(torch.float32), emb.sin().to(torch.float32))
 
 
+# for llama
 def rotate_half(x: torch.Tensor) -> torch.Tensor:
+    """Rotates half the hidden dims of the input."""
     x = einops.rearrange(x, "... (d r) -> ... d r", r=2)
     x1, x2 = x.unbind(dim=-1)
     x = torch.stack((-x2, x1), dim=-1)
@@ -71,6 +72,7 @@ def apply_rotary_emb(xq: torch.Tensor, xk: torch.Tensor, angle: Tuple[torch.Tens
     return (xq, xk)
 
 
+# not used
 def apply_rotary_emb_to_one(x: torch.Tensor, angle: Tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
     # x: batch_size, seq_len, num_head, head_dim
     _, seq_len, _, dim_head = x.shape
@@ -81,7 +83,7 @@ def apply_rotary_emb_to_one(x: torch.Tensor, angle: Tuple[torch.Tensor, torch.Te
     x = (x * cos) + (rotate_half(x) * sin)
     return x
 
-
+# copied and pasted in model_llama.py to imitate RMSnorm in transformer sub-layer
 class RMSNorm(torch.nn.Module):
     def __init__(self, weight: torch.Tensor, eps: float = 1e-6):
         super().__init__()
@@ -93,8 +95,8 @@ class RMSNorm(torch.nn.Module):
 
     def forward(self, data: torch.Tensor) -> torch.Tensor:
         input_dtype = data.dtype
-        v = data.to(torch.float32).pow(2).mean(-1, keepdim=True)
-        data = data * torch.rsqrt(v + self.norm_eps_)
+        variance = data.to(torch.float32).pow(2).mean(-1, keepdim=True)
+        data = data * torch.rsqrt(variance + self.norm_eps_)
 
         return (self.weight_ * data).to(input_dtype)
 

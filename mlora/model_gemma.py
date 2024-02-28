@@ -1,8 +1,6 @@
 from mlora.modelargs import LLMModelArgs, LoraBatchData
 from mlora.checkpoint import CheckpointRecomputeFunction
-# from mlora.model import repeat_kv, apply_rotary_emb, precompute_rope_angle, precompute_mask
 from mlora.model import LLMModel
-# from mlora.model import RMSNorm
 from mlora.LoraLiner import Linear
 
 import torch
@@ -19,6 +17,7 @@ FORMAT = '%(asctime)s %(filename)s %(module)s %(funcName)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 
+# unsure
 class Embedding(torch.nn.Module):
     def __init__(self, embedding: torch.Tensor, pad_token: int):
         super().__init__()
@@ -31,6 +30,7 @@ class Embedding(torch.nn.Module):
         return data
 
 
+# not implemented in transformers 4.30.2
 class OutputLayer(torch.nn.Module):
     def __init__(self, weight: torch.Tensor):
         super().__init__()
@@ -40,38 +40,19 @@ class OutputLayer(torch.nn.Module):
         return data @ self.weight_.transpose(0, 1)
 
 
-class RMSNormLayer(torch.nn.Module):
+# done
+class GemmaRMSNorm(nn.Module):
     def __init__(self, weight: torch.Tensor, eps: float = 1e-6):
         super().__init__()
         self.norm_eps_ = eps
-        self.weight_ = weight
+        self.weight = weight
 
     def _norm(self, data: torch.Tensor) -> torch.Tensor:
-        return data * torch.rsqrt(+ self.norm_eps_)
+        return data * torch.rsqrt(data.pow(2).mean(-1, keepdim=True) + self.norm_eps_)
 
     def forward(self, data: torch.Tensor) -> torch.Tensor:
-        input_dtype = data.dtype
-        variance = data.to(torch.float32).pow(2).mean(-1, keepdim=True) # concatenated high-dimensional embedding -> linear embedding ?
-        data = data * torch.rsqrt(variance + self.norm_eps_)
-
-        return (self.weight_ * data).to(input_dtype)
-
-# supposedly just to differentiate post-attention-normalization from the Norm Layer
-class RMSNorm(torch.nn.Module):
-    def __init__(self, weight: torch.Tensor, eps: float = 1e-6):
-        super().__init__()
-        self.norm_eps_ = eps
-        self.weight_ = weight
-
-    def _norm(self, data: torch.Tensor) -> torch.Tensor:
-        return data * torch.rsqrt(+ self.norm_eps_)
-
-    def forward(self, data: torch.Tensor) -> torch.Tensor:
-        input_dtype = data.dtype
-        variance = data.to(torch.float32).pow(2).mean(-1, keepdim=True)
-        data = data * torch.rsqrt(variance + self.norm_eps_)
-
-        return (self.weight_ * data).to(input_dtype)
+        output = self._norm(data.float()).type_as(data)
+        return output * (1 + self.weight)
 
 
 class Transformer(torch.nn.Module):
@@ -87,8 +68,8 @@ class Transformer(torch.nn.Module):
         self.w2_down: Linear = None  # also down dim * FNN
         self.w3_up: Linear = None  # also up   FNN * dim
         # norm
-        self.attention_norm_: RMSNorm = None  # dim
-        self.ffn_norm_: RMSNorm = None        # dim
+        self.attention_norm_: GemmaRMSNorm = None  # dim
+        self.ffn_norm_: GemmaRMSNorm = None        # dim
         # other arg
         self.layer_id_ = layer_id
         self.norm_eps_ = args.norm_eps_
@@ -286,6 +267,7 @@ class LlamaModel(LLMModel):
             self.layers_.append(Transformer(layer_id, args))
 
         self.norm_: RMSNormLayer = None    # dim
+        # may not exist in gemma
         self.output_: OutputLayer = None   # vocab size * dim
 
         # cos and sin

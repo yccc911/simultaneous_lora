@@ -11,6 +11,7 @@ import torch.utils.checkpoint
 import xformers.ops
 import xformers.ops.fmha.attn_bias
 from transformers import AutoModelForCausalLM
+import einops
 from typing import List, Dict, Tuple, Optional
 from collections import OrderedDict
 import logging
@@ -191,7 +192,7 @@ class LlamaSequentialWrapper(torch.nn.Module):
         else:
             raise f"module invalid: {module_name}"
 
-# copied from model.py 
+# copied from model.py
     # precompute_mask
     # precompute_rope_angle
     # rotate_half

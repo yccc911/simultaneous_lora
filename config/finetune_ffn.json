@@ -1,13 +1,13 @@
 {
-    "cutoff_len": 4000,
+    "cutoff_len": 1024,
     "save_step": 100,
     "early_stop_test_step": 2000,
     "train_lora_candidate_num": 4,
     "general_lora": {
-        "name": "general_lora",
-        "output": "general_lora",
-        "r": 32,
-        "alpha": 32,
+        "name": "general",
+        "output": "general",
+        "r": 96,
+        "alpha": 96,
         "_alpha_comment": "alpha/r == scaling factor of EVERY lora",
         "micro_batch_size": 4,
         "num_epochs": 1,
@@ -27,8 +27,68 @@
     },
     "lora": [
         {
-            "name": "sharegpt_lora",
-            "output": "sharegpt",
+            "name": "temporal",
+            "output": "temporal_lora",
+            "optim": "adamw",
+            "lr": 5e-5,
+            "dropout": 0.05,
+            "batch_size": 32,
+            "target_modules": {
+                "q_proj": false,
+                "k_proj": false,
+                "v_proj": false,
+                "o_proj": false,
+                "w1_proj": true,
+                "w2_proj": true,
+                "w3_proj": true
+            },
+            "data": "data/temporal.json",
+            "prompt": "template/template.json",
+            "expand_side": "right"
+        },
+        {
+            "name": "temporal",
+            "output": "temporal_lora",
+            "optim": "adamw",
+            "lr": 5e-5,
+            "dropout": 0.05,
+            "batch_size": 32,
+            "target_modules": {
+                "q_proj": false,
+                "k_proj": false,
+                "v_proj": false,
+                "o_proj": false,
+                "w1_proj": true,
+                "w2_proj": true,
+                "w3_proj": true
+            },
+            "data": "data/temporal.json",
+            "prompt": "template/template.json",
+            "expand_side": "right"
+        },
+        {
+            "name": "temporal",
+            "output": "temporal_lora",
+            "optim": "adamw",
+            "lr": 5e-5,
+            "dropout": 0.05,
+            "batch_size": 32,
+            "target_modules": {
+                "q_proj": false,
+                "k_proj": false,
+                "v_proj": false,
+                "o_proj": false,
+                "w1_proj": true,
+                "w2_proj": true,
+                "w3_proj": true
+            },
+            "data": "data/temporal.json",
+            "prompt": "template/template.json",
+            "expand_side": "right"
+        },
+        {
+            "name": "sharegpt",
+            "output": "sharegpt_lora",
             "optim": "adamw",
             "lr": 5e-5,
             "dropout": 0.05,
@@ -43,46 +103,6 @@
                 "w3_proj": true
             },
             "data": "data/sharegpt.json",
-            "prompt": "template/template.json",
-            "expand_side": "right"
-        },
-        {
-            "name": "mmlu_lora",
-            "output": "mmlu",
-            "optim": "adamw",
-            "lr": 5e-5,
-            "dropout": 0.05,
-            "batch_size": 32,
-            "target_modules": {
-                "q_proj": false,
-                "k_proj": false,
-                "v_proj": false,
-                "o_proj": false,
-                "w1_proj": true,
-                "w2_proj": true,
-                "w3_proj": true
-            },
-            "data": "data/mmlu.json",
-            "prompt": "template/template.json",
-            "expand_side": "right"
-        },
-        {
-            "name": "drop_lora",
-            "output": "drop",
-            "optim": "adamw",
-            "lr": 5e-5,
-            "dropout": 0.05,
-            "batch_size": 32,
-            "target_modules": {
-                "q_proj": false,
-                "k_proj": false,
-                "v_proj": false,
-                "o_proj": false,
-                "w1_proj": true,
-                "w2_proj": true,
-                "w3_proj": true
-            },
-            "data": "data/drop.json",
             "prompt": "template/template.json",
             "expand_side": "right"
         }

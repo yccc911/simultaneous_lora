@@ -9,7 +9,7 @@
         "r": 32,
         "alpha": 32,
         "_alpha_comment": "alpha/r == scaling factor of EVERY lora",
-        "micro_batch_size": 4,
+        "micro_batch_size": 2,
         "num_epochs": 1,
         "optim": "adamw",
         "lr": 5e-5,
